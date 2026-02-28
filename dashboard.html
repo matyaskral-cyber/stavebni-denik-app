@@ -247,10 +247,10 @@
   </a>
   <div class="topbar-right">
     <div class="topbar-user">
-      <div class="avatar-top">JN</div>
-      <span>Jan Novák</span>
+      <div class="avatar-top" id="top-initials">?</div>
+      <span id="top-name">—</span>
     </div>
-    <button class="topbar-btn" onclick="window.location='index.html'">Odhlásit</button>
+    <button class="topbar-btn" onclick="logout()">Odhlásit</button>
   </div>
 </div>
 
@@ -471,6 +471,16 @@
 </div>
 
 <script>
+  // Načtení přihlášeného uživatele
+  const user = JSON.parse(localStorage.getItem('sd_user') || 'null');
+  if (!user) { window.location = 'index.html'; }
+  else {
+    const ini = user.name.replace(/Ing\.\s*/,'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    document.getElementById('top-initials').textContent = ini;
+    document.getElementById('top-name').textContent = user.name;
+  }
+  function logout() { localStorage.removeItem('sd_user'); window.location = 'index.html'; }
+
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));

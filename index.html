@@ -8,17 +8,17 @@
   <link rel="stylesheet" href="style.css" />
   <style>
     body {
-      background: var(--bg);
+      background: radial-gradient(ellipse at top, #dcfce7 0%, #f5fdf5 60%);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 24px;
     }
 
     .login-wrap {
       width: 100%;
-      max-width: 380px;
-      padding: 20px;
+      max-width: 680px;
     }
 
     .logo-bar {
@@ -42,84 +42,86 @@
     }
 
     .logo-bar p {
-      color: var(--subtle);
+      color: var(--muted);
       font-size: 0.78rem;
       margin-top: 4px;
     }
 
-    .login-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 28px 24px;
-    }
-
-    .field {
-      margin-bottom: 14px;
-    }
-
-    .field label {
-      display: block;
-      font-size: 0.72rem;
+    .section-label {
+      font-size: 0.68rem;
       font-weight: 600;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 5px;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      text-align: center;
     }
 
-    .field input {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 9px 12px;
-      font-size: 0.875rem;
-      font-family: inherit;
-      outline: none;
-      color: var(--text);
-      transition: border-color 0.15s, box-shadow 0.15s;
+    .user-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
-    .field input:focus {
-      border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(46,139,46,0.14);
-    }
-
-    .btn-login {
-      width: 100%;
-      background: var(--slate);
-      color: #fff;
-      font-weight: 600;
-      font-size: 0.875rem;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
+    .user-btn {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 12px;
       cursor: pointer;
       font-family: inherit;
-      transition: opacity 0.15s;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .user-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(60,184,67,0.15);
+    }
+
+    .u-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+    }
+
+    .user-btn.admin .u-avatar {
+      background: #1e6b24;
+    }
+
+    .u-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .u-role {
+      font-size: 0.68rem;
+      color: var(--muted);
       margin-top: 4px;
     }
 
-    .btn-login:hover { opacity: 0.88; }
-
-    .forgot {
-      text-align: center;
-      margin-top: 12px;
-      font-size: 0.78rem;
-      color: var(--subtle);
-    }
-
-    .forgot a {
-      color: var(--green);
-      text-decoration: none;
-      font-weight: 500;
+    .user-btn.admin .u-role {
+      color: var(--primary-dark);
+      font-weight: 600;
     }
 
     .divider {
       text-align: center;
-      color: var(--subtle);
+      color: var(--muted);
       font-size: 0.72rem;
-      margin: 18px 0;
+      margin: 4px 0 16px;
       position: relative;
     }
 
@@ -135,84 +137,17 @@
 
     .divider span {
       position: relative;
-      background: var(--surface);
-      padding: 0 10px;
+      background: transparent;
+      padding: 0 12px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
     }
-
-    .demo-section-label {
-      font-size: 0.68rem;
-      font-weight: 600;
-      color: var(--subtle);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 8px;
-    }
-
-    .demo-btn {
-      width: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-weight: 500;
-      font-size: 0.84rem;
-      padding: 9px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s, border-color 0.15s;
-      margin-bottom: 6px;
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .demo-btn:hover {
-      background: var(--surface);
-      border-color: var(--border-2);
-    }
-
-    .demo-btn.mgr {
-      background: var(--green-bg);
-      border-color: var(--green-b);
-      color: var(--green-d);
-    }
-
-    .demo-btn.mgr:hover {
-      background: #dcfce7;
-    }
-
-    .demo-role-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      background: var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--muted);
-      flex-shrink: 0;
-    }
-
-    .demo-btn.mgr .demo-role-icon {
-      background: var(--green-b);
-      color: var(--green-d);
-    }
-
-    .demo-btn-text { flex: 1; }
-    .demo-btn-name { font-weight: 600; font-size: 0.84rem; }
-    .demo-btn-role { font-size: 0.72rem; color: var(--subtle); margin-top: 1px; }
-    .demo-btn.mgr .demo-btn-role { color: var(--green); }
 
     .version {
       text-align: center;
-      margin-top: 16px;
+      margin-top: 20px;
       font-size: 0.7rem;
-      color: var(--subtle);
+      color: var(--muted);
     }
   </style>
 </head>
@@ -222,54 +157,60 @@
   <div class="logo-bar">
     <img src="logo.jpg" class="login-logo" alt="I. Kamenická stavební a obchodní firma s.r.o." />
     <h1>Stavební deník</h1>
-    <p>Digitální deník pro stavební firmy · vyhl. č. 499/2006 Sb.</p>
+    <p>I. Kamenická stavební a obchodní firma s.r.o. · vyhl. č. 499/2006 Sb.</p>
   </div>
 
-  <div class="login-card">
-    <div class="field">
-      <label>E-mail</label>
-      <input type="email" placeholder="jnovak@firma.cz" />
-    </div>
-    <div class="field">
-      <label>Heslo</label>
-      <input type="password" placeholder="••••••••" />
-    </div>
-    <button class="btn-login" onclick="login()">Přihlásit se</button>
-    <div class="forgot"><a href="#">Zapomenuté heslo?</a></div>
+  <div class="section-label">Vedení</div>
+  <div class="user-grid" id="grid-admin"></div>
 
-    <div class="divider"><span>nebo demo přístup</span></div>
+  <div class="divider"><span>stavbyvedoucí</span></div>
 
-    <div class="demo-section-label">Vyberte roli</div>
+  <div class="user-grid" id="grid-users"></div>
 
-    <button class="demo-btn" onclick="window.location='dashboard.html'">
-      <div class="demo-role-icon">JN</div>
-      <div class="demo-btn-text">
-        <div class="demo-btn-name">Jan Novák</div>
-        <div class="demo-btn-role">Stavbyvedoucí</div>
-      </div>
-    </button>
-
-    <button class="demo-btn mgr" onclick="window.location='dashboard-nadrizeny.html'">
-      <div class="demo-role-icon">PM</div>
-      <div class="demo-btn-text">
-        <div class="demo-btn-name">Petr Mrázek</div>
-        <div class="demo-btn-role">Nadřízený / Ředitel</div>
-      </div>
-    </button>
-  </div>
-
-  <div class="version">Stavební deník v3.0 · Demo</div>
+  <div class="version">Stavební deník v3.0</div>
 </div>
 
 <script>
-  function login() {
-    const email = document.querySelector('input[type=email]').value.toLowerCase();
-    if (email.includes('mrazek') || email.includes('reditel') || email.includes('nadrizeny')) {
-      window.location = 'dashboard-nadrizeny.html';
-    } else {
-      window.location = 'dashboard.html';
-    }
+  const USERS = [
+    { name: 'Ing. Lukáš Hrbek',   role: 'admin', title: 'Vedoucí pobočky'  },
+    { name: 'Jaroslav Dvořáček',  role: 'admin', title: 'Vedoucí / Admin'   },
+    { name: 'Tadeáš Zahradník',   role: 'admin', title: 'Vedoucí / Admin'   },
+    { name: 'Václav Hanzálek',    role: 'admin', title: 'Vedoucí / Admin'   },
+    { name: 'Jan Sláma',          role: 'user',  title: 'Stavbyvedoucí'     },
+    { name: 'Roman Fára',         role: 'user',  title: 'Stavbyvedoucí'     },
+    { name: 'Antonín Houser',     role: 'user',  title: 'Stavbyvedoucí'     },
+  ];
+
+  function initials(name) {
+    return name.replace(/Ing\.\s*/, '').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
   }
+
+  function buildGrid() {
+    const admins = USERS.filter(u => u.role === 'admin');
+    const users  = USERS.filter(u => u.role === 'user');
+
+    document.getElementById('grid-admin').innerHTML = admins.map(u => `
+      <button class="user-btn admin" onclick="login('${u.name}', '${u.role}')">
+        <div class="u-avatar">${initials(u.name)}</div>
+        <div class="u-name">${u.name}</div>
+        <div class="u-role">${u.title}</div>
+      </button>`).join('');
+
+    document.getElementById('grid-users').innerHTML = users.map(u => `
+      <button class="user-btn" onclick="login('${u.name}', '${u.role}')">
+        <div class="u-avatar">${initials(u.name)}</div>
+        <div class="u-name">${u.name}</div>
+        <div class="u-role">${u.title}</div>
+      </button>`).join('');
+  }
+
+  function login(name, role) {
+    const user = USERS.find(u => u.name === name);
+    localStorage.setItem('sd_user', JSON.stringify(user));
+    window.location = role === 'admin' ? 'dashboard-nadrizeny.html' : 'dashboard.html';
+  }
+
+  buildGrid();
 </script>
 </body>
 </html>

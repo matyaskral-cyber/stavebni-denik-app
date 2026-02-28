@@ -62,8 +62,8 @@
     <span class="role-pill">Nadřízený</span>
   </a>
   <div class="topbar-right">
-    <div class="topbar-user"><div class="avatar-top">PM</div><span>Petr Mrázek</span></div>
-    <button class="topbar-btn" onclick="window.location='index.html'">Odhlásit</button>
+    <div class="topbar-user"><div class="avatar-top" id="top-initials">?</div><span id="top-name">—</span></div>
+    <button class="topbar-btn" onclick="logout()">Odhlásit</button>
   </div>
 </div>
 <div class="layout">
@@ -131,6 +131,15 @@
   </main>
 </div>
 <script>
+  const user = JSON.parse(localStorage.getItem('sd_user') || 'null');
+  if (!user) { window.location = 'index.html'; }
+  else {
+    const ini = user.name.replace(/Ing\.\s*/,'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    document.getElementById('top-initials').textContent = ini;
+    document.getElementById('top-name').textContent = user.name;
+  }
+  function logout() { localStorage.removeItem('sd_user'); window.location = 'index.html'; }
+
   const SITES = [
     { id:1, name:'Bytový dům Prosecká', addr:'Prosecká 14, Praha 9', status:'probiha', statusLabel:'Probíhá', start:'3. 2. 2025', end:'30. 11. 2025', mgr:'Jan Novák', mgrAbbr:'JN', investor:'Prosecká s.r.o.', progress:38, lastEntry:'dnes', lastWarn:false },
     { id:2, name:'Rekonstrukce RD Beroun', addr:'Palackého 7, Beroun', status:'probiha', statusLabel:'Probíhá', start:'15. 3. 2025', end:'31. 7. 2025', mgr:'Jan Novák', mgrAbbr:'JN', investor:'Pavel Kratochvíl', progress:62, lastEntry:'včera', lastWarn:false },

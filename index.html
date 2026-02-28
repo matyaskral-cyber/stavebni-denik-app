@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="style.css" />
   <style>
     body {
-      background: linear-gradient(160deg, #0a2e0f 0%, #1e6b24 50%, #145218 100%);
+      background: linear-gradient(170deg, #071a09 0%, #0f3d14 35%, #1a5c20 65%, #0d2e11 100%);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -19,16 +19,25 @@
       overflow-x: hidden;
     }
 
-    /* Jemný glow efekt v pozadí */
+    /* Světelný paprsek za logem */
     body::before {
       content: '';
       position: fixed;
-      top: -20%;
+      top: -10%;
       left: 50%;
       transform: translateX(-50%);
-      width: 700px;
-      height: 700px;
-      background: radial-gradient(ellipse, rgba(60,184,67,0.18) 0%, transparent 70%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(60,184,67,0.12) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 200px;
+      background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
       pointer-events: none;
     }
 
@@ -45,11 +54,13 @@
     }
 
     .logo-wrap img {
-      height: 200px;
+      height: 220px;
       width: auto;
       display: block;
-      mix-blend-mode: multiply;
-      filter: drop-shadow(0 0 30px rgba(60,184,67,0.5));
+      mix-blend-mode: screen;
+      filter: grayscale(1) brightness(0.68) contrast(100) invert(1)
+              drop-shadow(0 0 40px rgba(255,255,255,0.25))
+              drop-shadow(0 0 80px rgba(60,184,67,0.3));
     }
 
     .hero h1 {
@@ -93,22 +104,22 @@
     }
 
     .user-btn {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 14px;
       padding: 16px 10px;
       cursor: pointer;
       font-family: inherit;
       text-align: center;
-      transition: all 0.2s ease;
-      backdrop-filter: blur(6px);
+      transition: all 0.22s ease;
+      backdrop-filter: blur(8px);
     }
 
     .user-btn:hover {
-      background: rgba(255,255,255,0.14);
-      border-color: rgba(60,184,67,0.6);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25), 0 0 0 1px rgba(60,184,67,0.3);
+      background: rgba(60,184,67,0.15);
+      border-color: rgba(60,184,67,0.5);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.3), 0 0 20px rgba(60,184,67,0.15);
     }
 
     .u-avatar {

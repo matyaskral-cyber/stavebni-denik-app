@@ -644,4 +644,5 @@ def api_kalendar_delete_by_datum(datum):
 if __name__ == '__main__':
     with app.app_context():
         _migrate()
-    app.run(host='0.0.0.0', port=8080, debug=False)
+    port = int(os.environ.get('PORT', 3000))
+    app.run(host='0.0.0.0', port=port, debug=False)

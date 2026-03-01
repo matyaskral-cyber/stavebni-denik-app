@@ -11,6 +11,6 @@ RUN mkdir -p /data
 
 ENV SQLALCHEMY_DATABASE_URI=sqlite:////data/stavebni_denik.db
 
-EXPOSE 8080
+EXPOSE 3000
 
 CMD ["python", "app.py"]

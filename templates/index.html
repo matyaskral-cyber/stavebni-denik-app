@@ -2,10 +2,10 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/jpeg" href="logo.jpg" />
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stavební deník – Přihlášení</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <style>
     body {
       background: linear-gradient(170deg, #133d18 0%, #1e6b24 35%, #2d8a36 65%, #163d1a 100%);
@@ -19,7 +19,6 @@
       overflow-x: hidden;
     }
 
-    /* Světelný paprsek za logem */
     body::before {
       content: '';
       position: fixed;
@@ -41,7 +40,6 @@
       pointer-events: none;
     }
 
-    /* ---- LOGO SEKCE ---- */
     .hero {
       text-align: center;
       margin-bottom: 36px;
@@ -77,7 +75,6 @@
       letter-spacing: 0.02em;
     }
 
-    /* ---- PROFILY ---- */
     .profiles-wrap {
       width: 100%;
       max-width: 700px;
@@ -188,36 +185,48 @@
       letter-spacing: 0.04em;
     }
 
+    .error-msg {
+      background: rgba(229,62,62,0.2);
+      border: 1px solid rgba(229,62,62,0.4);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      margin-bottom: 16px;
+      text-align: center;
+      display: none;
+    }
+
+    .error-msg.show { display: block; }
+
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .hero        { animation: fadeUp 0.55s ease both; }
-    .profiles-wrap { animation: fadeUp 0.55s 0.15s ease both; }
-    .version     { animation: fadeUp 0.4s 0.3s ease both; }
-
-    .user-btn    { animation: fadeUp 0.4s ease both; }
+    .hero           { animation: fadeUp 0.55s ease both; }
+    .profiles-wrap  { animation: fadeUp 0.55s 0.15s ease both; }
+    .version        { animation: fadeUp 0.4s 0.3s ease both; }
+    .user-btn       { animation: fadeUp 0.4s ease both; }
   </style>
 </head>
 <body>
 
-<!-- HERO -->
 <div class="hero">
   <div class="logo-wrap">
-    <img src="logo.jpg" alt="I. Kamenická stavební a obchodní firma s.r.o." />
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="I. Kamenická stavební a obchodní firma s.r.o." />
   </div>
   <h1>Stavební deník</h1>
   <p>I. Kamenická stavební a obchodní firma s.r.o.</p>
 </div>
 
-<!-- PROFILY -->
 <div class="profiles-wrap">
+  <div id="error-msg" class="error-msg"></div>
+
   <div class="divider"><span>vedení</span></div>
   <div class="user-grid" id="grid-admin"></div>
 
   <div class="divider"><span>stavbyvedoucí</span></div>
-
   <div class="user-grid" id="grid-users"></div>
 </div>
 
@@ -258,10 +267,29 @@
       </button>`).join('');
   }
 
-  function login(name, role) {
-    const user = USERS.find(u => u.name === name);
-    localStorage.setItem('sd_user', JSON.stringify(user));
-    window.location = role === 'admin' ? 'dashboard-nadrizeny.html' : 'dashboard.html';
+  async function login(name, role) {
+    try {
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jmeno: name, role: role }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        window.location = data.redirect;
+      } else {
+        showError(data.error || 'Přihlášení se nezdařilo');
+      }
+    } catch (e) {
+      showError('Chyba připojení k serveru');
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
   }
 
   buildGrid();

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stavební deník – Pracovníci</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    .main { padding: 24px 28px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .stat-label { font-size: 0.68rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.orange { color: var(--orange); }
+    .stat-sub { font-size: 0.72rem; color: var(--subtle); margin-top: 4px; }
+
+    .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search-input { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 0.84rem; font-family: inherit; outline: none; width: 200px; color: var(--text); }
+    .search-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,139,46,0.14); }
+    .filter-select { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 0.84rem; font-family: inherit; outline: none; color: var(--text); background: var(--surface); }
+    .filter-select:focus { border-color: var(--green); }
+
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--bg); }
+    th { text-align: left; padding: 10px 14px; font-size: 0.63rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--border); }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 0.82rem; color: var(--text); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+
+    .worker-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--slate); color: #fff; font-weight: 600; font-size: 0.68rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .worker-name { font-weight: 600; color: var(--text); }
+    .worker-meta { font-size: 0.72rem; color: var(--subtle); margin-top: 1px; }
+    .action-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 9px; border-radius: 5px; cursor: pointer; font-size: 0.72rem; font-family: inherit; }
+    .action-btn:hover { border-color: var(--green); color: var(--green); }
+    .action-btn.del:hover { border-color: var(--red); color: var(--red); }
+
+    .bozp-ok   { color: var(--green-d); font-weight: 500; font-size: 0.78rem; }
+    .bozp-warn { color: var(--orange);  font-weight: 500; font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+
+{% set u = current_user %}
+{% set ini_raw = u.jmeno|replace('Ing. ','')|replace('Ing.','') %}
+{% set parts = ini_raw.split(' ') %}
+{% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
+
+<div class="topbar">
+  <a href="{{ url_for('dashboard') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
+    Stavební deník
+  </a>
+  <div class="topbar-right">
+    <div class="topbar-user"><div class="avatar-top">{{ initials }}</div><span>{{ u.jmeno }}</span></div>
+    <button class="topbar-btn" onclick="logout()">Odhlásit</button>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="nav-section">Hlavní menu</div>
+    <a class="nav-item" href="{{ url_for('dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
+    <a class="nav-item" href="{{ url_for('denik') }}"><span class="nav-dot"></span> Deník</a>
+    <a class="nav-item" href="{{ url_for('kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
+    <a class="nav-item active" href="{{ url_for('pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
+    <div class="nav-section">Firma</div>
+    <a class="nav-item" href="{{ url_for('dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
+    <a class="nav-item" href="{{ url_for('prehled') }}"><span class="nav-dot"></span> Přehledy</a>
+    <div class="nav-section">Nastavení</div>
+    <a class="nav-item" href="{{ url_for('nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
+    <a class="nav-item" href="{{ url_for('profil') }}"><span class="nav-dot"></span> Profil</a>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-card">
+        <div class="sidebar-avatar">{{ initials }}</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">{{ u.jmeno }}</div>
+          <div class="sidebar-user-role">{{ 'Vedoucí' if u.role == 'admin' else 'Stavbyvedoucí' }}</div>
+        </div>
+        <button class="sidebar-logout-btn" onclick="logout()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Pracovníci a tým</div>
+      </div>
+      <button class="btn-primary" onclick="showAddModal()">+ Přidat pracovníka</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Celkem pracovníků</div>
+        <div class="stat-value green" id="stat-celkem">{{ workers|length }}</div>
+        <div class="stat-sub">v evidenci</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Aktivní</div>
+        <div class="stat-value green" id="stat-aktivni">{{ workers|selectattr('aktivni')|list|length }}</div>
+        <div class="stat-sub">v evidenci</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Neaktivní</div>
+        <div class="stat-value" id="stat-neaktivni">{{ workers|rejectattr('aktivni')|list|length }}</div>
+        <div class="stat-sub">v evidenci</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">BOZP platné</div>
+        <div class="stat-value orange" id="stat-bozp">—</div>
+        <div class="stat-sub">z celkového počtu</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input class="search-input" placeholder="Hledat pracovníka…" oninput="filterTable(this.value)" />
+      <select class="filter-select" onchange="filterRole(this.value)">
+        <option value="">Všechny role</option>
+        <option>Stavbyvedoucí</option>
+        <option>Zedník</option>
+        <option>Tesař</option>
+        <option>Betonář</option>
+        <option>Instalatér</option>
+        <option>Elektrikář</option>
+        <option>Lešenář</option>
+        <option>Železář</option>
+      </select>
+    </div>
+
+    <div class="table-card">
+      <table id="worker-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Jméno</th>
+            <th>Role / profese</th>
+            <th>Firma</th>
+            <th>Kvalifikace</th>
+            <th>BOZP školení</th>
+            <th>Stav</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="worker-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add worker modal -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px;width:440px;max-width:95vw;">
+    <div style="font-size:1rem;font-weight:700;margin-bottom:20px;">Přidat pracovníka</div>
+    <div class="form-grid">
+      <div class="form-field full"><label>Jméno *</label><input id="n-jmeno" placeholder="Jan Novák" /></div>
+      <div class="form-field"><label>Role / profese</label><input id="n-role" placeholder="Zedník" /></div>
+      <div class="form-field"><label>Firma</label><input id="n-firma" /></div>
+      <div class="form-field"><label>Kvalifikace</label><input id="n-kval" /></div>
+      <div class="form-field"><label>Datum BOZP školení</label><input id="n-bozp" type="date" /></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="submitWorker()">Přidat</button>
+      <button class="btn-secondary" onclick="closeModal()">Zrušit</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let allWorkers = [];
+
+  async function loadWorkers() {
+    const res = await fetch('/api/pracovnici');
+    allWorkers = await res.json();
+    renderWorkers(allWorkers);
+    updateBozpStat();
+  }
+
+  function initials(name) {
+    return name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+  }
+
+  function bozpStatus(bozp_datum) {
+    if (!bozp_datum) return { ok: false, label: 'Neznámé' };
+    const d = new Date(bozp_datum);
+    const ok = (new Date() - d) < 365*24*60*60*1000;
+    return { ok, label: `${ok ? 'Platné' : 'Prošlé'} · ${bozp_datum}` };
+  }
+
+  function updateBozpStat() {
+    const ok = allWorkers.filter(w => bozpStatus(w.bozp_datum).ok).length;
+    document.getElementById('stat-bozp').textContent = ok;
+    document.getElementById('stat-celkem').textContent = allWorkers.length;
+    document.getElementById('stat-aktivni').textContent = allWorkers.filter(w=>w.aktivni).length;
+    document.getElementById('stat-neaktivni').textContent = allWorkers.filter(w=>!w.aktivni).length;
+  }
+
+  function renderWorkers(data) {
+    const tbody = document.getElementById('worker-tbody');
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">Žádní pracovníci.</td></tr>'; return; }
+    tbody.innerHTML = data.map(w => {
+      const bozp = bozpStatus(w.bozp_datum);
+      return `<tr>
+        <td><div class="worker-avatar">${initials(w.jmeno)}</div></td>
+        <td><div class="worker-name">${w.jmeno}</div><div class="worker-meta">${w.role || '—'}</div></td>
+        <td style="color:var(--muted)">${w.role || '—'}</td>
+        <td style="color:var(--muted)">${w.firma || '—'}</td>
+        <td style="color:var(--muted)">${w.kvalifikace || '—'}</td>
+        <td class="${bozp.ok ? 'bozp-ok' : 'bozp-warn'}">${bozp.label}</td>
+        <td><span class="status-badge ${w.aktivni ? 'green' : 'gray'}">${w.aktivni ? 'Aktivní' : 'Neaktivní'}</span></td>
+        <td style="display:flex;gap:4px;">
+          <button class="action-btn" onclick="toggleActive(${w.id},${w.aktivni})">${w.aktivni ? 'Deakt.' : 'Aktivovat'}</button>
+          <button class="action-btn del" onclick="deleteWorker(${w.id})">&#x2715;</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filterTable(q) {
+    const filtered = allWorkers.filter(w =>
+      w.jmeno.toLowerCase().includes(q.toLowerCase()) ||
+      (w.role||'').toLowerCase().includes(q.toLowerCase()) ||
+      (w.firma||'').toLowerCase().includes(q.toLowerCase())
+    );
+    renderWorkers(filtered);
+  }
+
+  function filterRole(r) {
+    renderWorkers(r ? allWorkers.filter(w => w.role === r) : allWorkers);
+  }
+
+  async function toggleActive(id, current) {
+    await fetch(`/api/pracovnici/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ aktivni: !current }),
+    });
+    loadWorkers();
+  }
+
+  async function deleteWorker(id) {
+    if (!confirm('Opravdu smazat pracovníka?')) return;
+    await fetch(`/api/pracovnici/${id}`, { method: 'DELETE' });
+    showToast('Pracovník smazán');
+    loadWorkers();
+  }
+
+  function showAddModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
+  function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+  async function submitWorker() {
+    const jmeno = document.getElementById('n-jmeno').value.trim();
+    if (!jmeno) { showToast('Jméno je povinné'); return; }
+    const data = {
+      jmeno,
+      role: document.getElementById('n-role').value,
+      firma: document.getElementById('n-firma').value,
+      kvalifikace: document.getElementById('n-kval').value,
+      bozp_datum: document.getElementById('n-bozp').value || null,
+      aktivni: true,
+    };
+    const res = await fetch('/api/pracovnici', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    if (res.ok) { closeModal(); showToast('Pracovník přidán'); loadWorkers(); }
+    else showToast('Chyba ukládání');
+  }
+
+  async function logout() {
+    await fetch('/auth/logout', { method: 'POST' });
+    window.location = '/';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+
+  loadWorkers();
+</script>
+</body>
+</html>

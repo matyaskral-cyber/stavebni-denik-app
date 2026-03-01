@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stavební deník – Náhled{% if stavba %} ({{ stavba.nazev }}){% endif %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    .topbar-left { display: flex; align-items: center; gap: 8px; }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; opacity: 0.7; margin-left: 8px; }
+    .breadcrumb a { color: #fff; text-decoration: none; }
+
+    .layout { display: flex; min-height: calc(100vh - 68px); }
+
+    .day-sidebar { width: 230px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+    .day-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .day-sidebar-title { font-size: 0.68rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .month-nav { display: flex; align-items: center; justify-content: space-between; }
+    .month-nav button { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
+    .month-nav button:hover { background: var(--bg); }
+    .month-label { font-weight: 600; font-size: 0.84rem; color: var(--text); }
+    .day-list { flex: 1; overflow-y: auto; }
+    .day-item { padding: 10px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .day-item:hover { background: var(--bg); }
+    .day-item.active { background: var(--green-bg); border-right: 2px solid var(--green); }
+    .day-item-date { font-size: 0.84rem; font-weight: 600; color: var(--text); display: flex; justify-content: space-between; }
+    .day-item-meta { font-size: 0.72rem; color: var(--subtle); margin-top: 2px; }
+
+    .main { flex: 1; overflow-y: auto; background: var(--bg); }
+    .stavba-info-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+    .si-item { display: flex; flex-direction: column; }
+    .si-label { font-size: 0.6rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.07em; }
+    .si-val { font-size: 0.82rem; font-weight: 600; color: var(--text); margin-top: 1px; }
+
+    .entry-view { padding: 20px 24px; }
+    .entry-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+    .entry-date-big { font-size: 1.25rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .entry-date-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    .entry-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 14px; }
+    .entry-section-title { font-size: 0.68rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .entry-field { margin-bottom: 10px; }
+    .entry-field:last-child { margin-bottom: 0; }
+    .ef-label { font-size: 0.65rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+    .ef-value { font-size: 0.88rem; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
+    .ef-value.muted { color: var(--subtle); font-style: italic; }
+
+    .workers-view-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .workers-view-table th { text-align: left; padding: 6px 10px; font-size: 0.65rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    .workers-view-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .workers-view-table tr:last-child td { border-bottom: none; }
+
+    .weather-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 0.84rem; }
+
+    .no-entry { padding: 60px 24px; text-align: center; color: var(--subtle); }
+
+    .role-pill { background: rgba(255,255,255,0.15); font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.04em; margin-left: 6px; }
+  </style>
+</head>
+<body>
+
+{% set u = current_user %}
+{% set ini_raw = u.jmeno|replace('Ing. ','')|replace('Ing.','') %}
+{% set parts = ini_raw.split(' ') %}
+{% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="{{ url_for('dashboard_nadrizeny') }}" class="topbar-logo">
+      <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
+      Stavební deník
+      <span class="role-pill">Vedení</span>
+    </a>
+    {% if stavba %}
+    <div class="breadcrumb">
+      <span>/</span>
+      <a href="{{ url_for('dashboard_nadrizeny') }}">Všechny stavby</a>
+      <span>/</span>
+      <span>{{ stavba.nazev }}</span>
+    </div>
+    {% endif %}
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-user"><div class="avatar-top">{{ initials }}</div><span>{{ u.jmeno }}</span></div>
+    <button class="topbar-btn" onclick="logout()">Odhlásit</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Day sidebar -->
+  <div class="day-sidebar">
+    <div class="day-sidebar-header">
+      <div class="day-sidebar-title">Záznamy deníku</div>
+      <div class="month-nav">
+        <button onclick="prevMonth()">&#8249;</button>
+        <span class="month-label" id="month-label"></span>
+        <button onclick="nextMonth()">&#8250;</button>
+      </div>
+    </div>
+    <div class="day-list" id="day-list">
+      <div style="color:var(--subtle);font-size:0.78rem;padding:16px;text-align:center;">Načítám záznamy…</div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <main class="main">
+    {% if stavba %}
+    <div class="stavba-info-bar">
+      <div class="si-item"><span class="si-label">Stavba</span><span class="si-val">{{ stavba.nazev }}</span></div>
+      {% if stavba.adresa %}<div class="si-item"><span class="si-label">Adresa</span><span class="si-val">{{ stavba.adresa }}</span></div>{% endif %}
+      {% if stavba.investor %}<div class="si-item"><span class="si-label">Investor</span><span class="si-val">{{ stavba.investor }}</span></div>{% endif %}
+      {% if stavba.tdi %}<div class="si-item"><span class="si-label">TDI</span><span class="si-val">{{ stavba.tdi }}</span></div>{% endif %}
+      <div class="si-item">
+        <span class="si-label">Stav</span>
+        <span class="si-val">
+          {% if stavba.stav == 'probiha' %}Probíhá
+          {% elif stavba.stav == 'dokoncena' %}Dokončena
+          {% else %}Pozastavena{% endif %}
+        </span>
+      </div>
+    </div>
+    {% endif %}
+
+    <div id="no-entry" class="no-entry">
+      <div style="font-size:2rem;margin-bottom:8px;">&#x1F4D3;</div>
+      <div style="font-size:0.88rem;">Vyberte záznam ze seznamu vlevo.</div>
+    </div>
+
+    <div id="entry-view" class="entry-view" style="display:none;">
+      <div class="entry-header">
+        <div>
+          <div class="entry-date-big" id="ev-date">—</div>
+          <div class="entry-date-sub" id="ev-sub">—</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <a id="ev-edit-link" href="#" class="btn-secondary" style="text-decoration:none;">Upravit v deníku</a>
+          <button class="btn-secondary" onclick="window.print()">Tisk</button>
+        </div>
+      </div>
+
+      <div class="entry-section">
+        <div class="entry-section-title">Počasí a podmínky</div>
+        <div class="entry-field">
+          <div class="ef-label">Počasí</div>
+          <div class="ef-value" id="ev-pocasi">—</div>
+        </div>
+        <div class="entry-field">
+          <div class="ef-label">Teplota</div>
+          <div class="ef-value" id="ev-teplota">—</div>
+        </div>
+      </div>
+
+      <div class="entry-section">
+        <div class="entry-section-title">Pracovníci na stavbě</div>
+        <div class="entry-field">
+          <div class="ef-label">Celkem pracovníků</div>
+          <div class="ef-value" id="ev-pracovnici-celkem">—</div>
+        </div>
+        <div id="ev-pracovnici-table-wrap"></div>
+      </div>
+
+      <div class="entry-section">
+        <div class="entry-section-title">Popis provedených prací</div>
+        <div class="entry-field">
+          <div class="ef-value" id="ev-popis">—</div>
+        </div>
+      </div>
+
+      <div class="entry-section" id="ev-poznamka-section">
+        <div class="entry-section-title">Poznámky</div>
+        <div class="entry-field">
+          <div class="ef-value" id="ev-poznamka">—</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const STAVBA_ID = {{ stavba.id if stavba else 'null' }};
+  const CZ_MONTHS = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+  const CZ_DAYS = ['Neděle','Pondělí','Úterý','Středa','Čtvrtek','Pátek','Sobota'];
+  const today = new Date();
+  let viewYear = today.getFullYear(), viewMonth = today.getMonth();
+  let allEntries = [];
+  let currentId = null;
+
+  async function loadEntries() {
+    if (!STAVBA_ID) return;
+    try {
+      const res = await fetch(`/api/stavby/${STAVBA_ID}/zaznamy`);
+      allEntries = await res.json();
+      renderDayList();
+      if (allEntries.length) openEntry(allEntries[0].id);
+    } catch(e) {}
+  }
+
+  function renderDayList() {
+    document.getElementById('month-label').textContent = `${CZ_MONTHS[viewMonth].slice(0,3)} ${viewYear}`;
+    const filtered = allEntries.filter(e => {
+      if (!e.datum) return false;
+      const [y,m] = e.datum.split('-').map(Number);
+      return y === viewYear && m-1 === viewMonth;
+    });
+    const el = document.getElementById('day-list');
+    if (!filtered.length) {
+      el.innerHTML = '<div style="color:var(--subtle);font-size:0.78rem;padding:16px;text-align:center;">Žádné záznamy v tomto měsíci.</div>';
+      return;
+    }
+    el.innerHTML = filtered.map(e => {
+      const [y,m,d] = e.datum.split('-').map(Number);
+      const date = new Date(y,m-1,d);
+      const isActive = e.id === currentId;
+      return `<div class="day-item${isActive?' active':''}" onclick="openEntry(${e.id})">
+        <div class="day-item-date">
+          <span>${d}. ${m}. ${y}</span>
+          <span>${CZ_DAYS[date.getDay()].slice(0,2)}</span>
+        </div>
+        <div class="day-item-meta">${e.pracovnici_celkem || 0} pracovníků · ${e.pocasi || '—'}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function prevMonth() { viewMonth--; if(viewMonth<0){viewMonth=11;viewYear--;} renderDayList(); }
+  function nextMonth() { viewMonth++; if(viewMonth>11){viewMonth=0;viewYear++;} renderDayList(); }
+
+  function openEntry(id) {
+    const e = allEntries.find(x => x.id === id);
+    if (!e) return;
+    currentId = id;
+
+    const [y,m,d] = e.datum.split('-').map(Number);
+    const date = new Date(y,m-1,d);
+    document.getElementById('ev-date').textContent = `${d}. ${m}. ${y} — ${CZ_DAYS[date.getDay()]}`;
+    document.getElementById('ev-sub').textContent = `${CZ_MONTHS[m-1]} ${y}`;
+    document.getElementById('ev-pocasi').textContent = e.pocasi || '—';
+    document.getElementById('ev-teplota').textContent = e.teplota || '—';
+    document.getElementById('ev-pracovnici-celkem').textContent = e.pracovnici_celkem || 0;
+    document.getElementById('ev-popis').textContent = e.popis_prac || '(nezapsáno)';
+    document.getElementById('ev-poznamka').textContent = e.poznamka || '(žádné)';
+
+    // Worker table
+    const tableWrap = document.getElementById('ev-pracovnici-table-wrap');
+    if (e.pracovnici && e.pracovnici.length) {
+      tableWrap.innerHTML = `<table class="workers-view-table">
+        <thead><tr><th>Počet</th><th>Profese</th><th>Firma</th></tr></thead>
+        <tbody>${e.pracovnici.map(p => `<tr>
+          <td><strong>${p.pocet}</strong></td>
+          <td>${p.profese||'—'}</td>
+          <td>${p.firma||'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    } else {
+      tableWrap.innerHTML = '';
+    }
+
+    // Edit link
+    document.getElementById('ev-edit-link').href = `/denik?stavba_id=${STAVBA_ID}`;
+
+    document.getElementById('no-entry').style.display = 'none';
+    document.getElementById('entry-view').style.display = 'block';
+    renderDayList();
+  }
+
+  async function logout() {
+    await fetch('/auth/logout', { method: 'POST' });
+    window.location = '/';
+  }
+
+  loadEntries();
+</script>
+</body>
+</html>

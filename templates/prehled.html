@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stavební deník – Přehledy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    .main { padding: 24px 28px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .stat-label { font-size: 0.68rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.orange { color: var(--orange); }
+    .stat-sub { font-size: 0.72rem; color: var(--subtle); margin-top: 4px; }
+
+    .period-selector { display: flex; gap: 5px; margin-bottom: 18px; }
+    .period-btn { padding: 5px 12px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); font-size: 0.78rem; font-weight: 500; cursor: pointer; color: var(--muted); font-family: inherit; }
+    .period-btn:hover { border-color: var(--border-2); color: var(--text); }
+    .period-btn.active { background: var(--slate); color: #fff; border-color: var(--slate); }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; }
+    .card-title { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 16px; }
+
+    .bar-item { margin-bottom: 12px; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 5px; }
+    .bar-label span:first-child { color: var(--text); font-weight: 500; }
+    .bar-label span:last-child { color: var(--subtle); font-size: 0.74rem; }
+    .bar { height: 5px; background: var(--border); border-radius: 100px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 100px; background: var(--green); }
+    .bar-fill.orange { background: var(--orange); }
+
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .list-item:last-child { border-bottom: none; }
+    .list-item-left { font-size: 0.84rem; font-weight: 500; color: var(--text); }
+    .list-item-sub { font-size: 0.72rem; color: var(--subtle); margin-top: 1px; }
+    .list-item-right { font-size: 0.84rem; font-weight: 600; color: var(--green-d); }
+  </style>
+</head>
+<body>
+
+{% set u = current_user %}
+{% set ini_raw = u.jmeno|replace('Ing. ','')|replace('Ing.','') %}
+{% set parts = ini_raw.split(' ') %}
+{% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
+
+<div class="topbar">
+  <a href="{{ url_for('dashboard') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
+    Stavební deník
+  </a>
+  <div class="topbar-right">
+    <div class="topbar-user"><div class="avatar-top">{{ initials }}</div><span>{{ u.jmeno }}</span></div>
+    <button class="topbar-btn" onclick="logout()">Odhlásit</button>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="nav-section">Hlavní menu</div>
+    <a class="nav-item" href="{{ url_for('dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
+    <a class="nav-item" href="{{ url_for('denik') }}"><span class="nav-dot"></span> Deník</a>
+    <a class="nav-item" href="{{ url_for('kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
+    <a class="nav-item" href="{{ url_for('pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
+    <div class="nav-section">Firma</div>
+    <a class="nav-item" href="{{ url_for('dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
+    <a class="nav-item active" href="{{ url_for('prehled') }}"><span class="nav-dot"></span> Přehledy</a>
+    <div class="nav-section">Nastavení</div>
+    <a class="nav-item" href="{{ url_for('nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
+    <a class="nav-item" href="{{ url_for('profil') }}"><span class="nav-dot"></span> Profil</a>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-card">
+        <div class="sidebar-avatar">{{ initials }}</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">{{ u.jmeno }}</div>
+          <div class="sidebar-user-role">{{ 'Vedoucí' if u.role == 'admin' else 'Stavbyvedoucí' }}</div>
+        </div>
+        <button class="sidebar-logout-btn" onclick="logout()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div class="page-title">Přehledy a statistiky</div>
+      <button class="btn-primary" onclick="showToast('Export do Excelu bude brzy dostupný.')">Exportovat do Excelu</button>
+    </div>
+    <div class="period-selector">
+      <button class="period-btn" onclick="setPeriod(this)">Tento týden</button>
+      <button class="period-btn active" onclick="setPeriod(this)">Tento měsíc</button>
+      <button class="period-btn" onclick="setPeriod(this)">Letošní rok</button>
+      <button class="period-btn" onclick="setPeriod(this)">Vlastní rozsah</button>
+    </div>
+    <div class="stats" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Celkem staveb</div>
+        <div class="stat-value green" id="s-celkem">—</div>
+        <div class="stat-sub">v evidenci</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Probíhající stavby</div>
+        <div class="stat-value" id="s-probiha">—</div>
+        <div class="stat-sub">aktivní</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Dokončeno</div>
+        <div class="stat-value orange" id="s-dokonceno">—</div>
+        <div class="stat-sub">stavby</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pracovníků v evidenci</div>
+        <div class="stat-value" id="s-pracovnici">—</div>
+        <div class="stat-sub">celkem</div>
+      </div>
+    </div>
+    <div class="grid2" id="stavby-bars">
+      <div class="card">
+        <div class="card-title">Záznamy dle stavby</div>
+        <div id="bar-zaznamy"><div style="color:var(--muted);font-size:0.82rem;">Načítám…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Stavby dle stavu</div>
+        <div id="bar-stavy"><div style="color:var(--muted);font-size:0.82rem;">Načítám…</div></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Přehled staveb</div>
+        <div id="stavby-list"><div style="color:var(--muted);font-size:0.82rem;">Načítám…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Pracovníci</div>
+        <div id="pracovnici-list"><div style="color:var(--muted);font-size:0.82rem;">Načítám…</div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  async function loadData() {
+    const [stavbyRes, pracovniciRes] = await Promise.all([
+      fetch('/api/stavby'),
+      fetch('/api/pracovnici'),
+    ]);
+    const stavby = await stavbyRes.json();
+    const pracovnici = await pracovniciRes.json();
+
+    document.getElementById('s-celkem').textContent = stavby.length;
+    document.getElementById('s-probiha').textContent = stavby.filter(s=>s.stav==='probiha').length;
+    document.getElementById('s-dokonceno').textContent = stavby.filter(s=>s.stav==='dokoncena').length;
+    document.getElementById('s-pracovnici').textContent = pracovnici.length;
+
+    // Bar chart for stavby by stav
+    const stavStates = { probiha: 0, dokoncena: 0, pozastavena: 0 };
+    stavby.forEach(s => { stavStates[s.stav] = (stavStates[s.stav]||0) + 1; });
+    const maxStav = Math.max(...Object.values(stavStates), 1);
+    document.getElementById('bar-stavy').innerHTML = [
+      { k: 'probiha', label: 'Probíhající' },
+      { k: 'dokoncena', label: 'Dokončené' },
+      { k: 'pozastavena', label: 'Pozastavené' },
+    ].map(item => `<div class="bar-item">
+      <div class="bar-label"><span>${item.label}</span><span>${stavStates[item.k] || 0} stavby</span></div>
+      <div class="bar"><div class="bar-fill" style="width:${Math.round((stavStates[item.k]||0)/maxStav*100)}%"></div></div>
+    </div>`).join('');
+
+    // Bar chart – stavby by name (show up to 5)
+    document.getElementById('bar-zaznamy').innerHTML = stavby.slice(0,5).map(s => `
+      <div class="bar-item">
+        <div class="bar-label"><span>${s.nazev}</span><span>${s.stav}</span></div>
+        <div class="bar"><div class="bar-fill${s.stav==='dokoncena'?' orange':''}" style="width:${s.stav==='dokoncena'?100:s.stav==='probiha'?60:20}%"></div></div>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:0.82rem;">Žádné stavby.</div>';
+
+    // Stavby list
+    document.getElementById('stavby-list').innerHTML = stavby.map(s => `
+      <div class="list-item">
+        <div>
+          <div class="list-item-left">${s.nazev}</div>
+          <div class="list-item-sub">${s.adresa || '—'}</div>
+        </div>
+        <span class="badge ${s.stav==='probiha'?'green':s.stav==='dokoncena'?'gray':'orange'}">${s.stav}</span>
+      </div>`).join('') || '<div style="color:var(--muted);">Žádné stavby.</div>';
+
+    // Pracovnici list
+    document.getElementById('pracovnici-list').innerHTML = pracovnici.slice(0,6).map(w => `
+      <div class="list-item">
+        <div>
+          <div class="list-item-left">${w.jmeno}</div>
+          <div class="list-item-sub">${w.role || '—'} · ${w.firma || '—'}</div>
+        </div>
+        <span class="badge ${w.aktivni?'green':'gray'}">${w.aktivni?'Aktivní':'Neaktivní'}</span>
+      </div>`).join('') || '<div style="color:var(--muted);">Žádní pracovníci.</div>';
+  }
+
+  function setPeriod(btn) {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  async function logout() {
+    await fetch('/auth/logout', { method: 'POST' });
+    window.location = '/';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  loadData();
+</script>
+</body>
+</html>

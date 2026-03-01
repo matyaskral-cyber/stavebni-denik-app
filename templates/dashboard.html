@@ -2,17 +2,16 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/jpeg" href="logo.jpg" />
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stavební deník – Moje stavby</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <style>
     .main {
       background: radial-gradient(ellipse at top, #dcfce7 0%, #f5fdf5 60%);
       min-height: calc(100vh - 84px);
     }
 
-    /* Page header */
     .page-header {
       display: flex;
       align-items: center;
@@ -27,7 +26,6 @@
       margin-top: 3px;
     }
 
-    /* Stats */
     .stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -57,7 +55,7 @@
       line-height: 1;
     }
 
-    .stat-value.green { color: var(--primary); }
+    .stat-value.green  { color: var(--primary); }
     .stat-value.orange { color: var(--warning); }
 
     .stat-sub {
@@ -66,7 +64,6 @@
       margin-top: 6px;
     }
 
-    /* Filters */
     .filters {
       display: flex;
       gap: 8px;
@@ -100,7 +97,6 @@
       box-shadow: 0 2px 8px rgba(60,184,67,0.3);
     }
 
-    /* Project grid */
     .stavby-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -171,9 +167,7 @@
       margin-top: 2px;
     }
 
-    .progress-bar-wrap {
-      margin-bottom: 0;
-    }
+    .progress-bar-wrap { margin-bottom: 0; }
 
     .progress-label {
       display: flex;
@@ -240,15 +234,20 @@
 </head>
 <body>
 
+{% set u = current_user %}
+{% set ini = u.jmeno|replace('Ing. ','')|replace('Ing.','') %}
+{% set parts = ini.split(' ') %}
+{% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
+
 <div class="topbar">
-  <a href="dashboard.html" class="topbar-logo">
-    <img src="logo.jpg" class="topbar-logo-img" alt="I. Kamenická stavební" />
+  <a href="{{ url_for('dashboard') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
     Stavební deník
   </a>
   <div class="topbar-right">
     <div class="topbar-user">
-      <div class="avatar-top" id="top-initials">?</div>
-      <span id="top-name">—</span>
+      <div class="avatar-top">{{ initials }}</div>
+      <span>{{ u.jmeno }}</span>
     </div>
     <button class="topbar-btn" onclick="logout()">Odhlásit</button>
   </div>
@@ -265,53 +264,49 @@
     </div>
 
     <div class="nav-section">Hlavní menu</div>
-    <a class="nav-item active" href="dashboard.html">
+    <a class="nav-item active" href="{{ url_for('dashboard') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>
       Moje stavby
     </a>
-    <a class="nav-item" href="denik.html">
+    <a class="nav-item" href="{{ url_for('denik') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></span>
       Deník
     </a>
-    <a class="nav-item" href="kalendar.html">
+    <a class="nav-item" href="{{ url_for('kalendar') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></span>
       Kalendář
     </a>
-    <a class="nav-item" href="pracovnici.html">
+    <a class="nav-item" href="{{ url_for('pracovnici') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
       Pracovníci
     </a>
 
     <div class="nav-section">Firma</div>
-    <a class="nav-item" href="dashboard-nadrizeny.html">
+    <a class="nav-item" href="{{ url_for('dashboard_nadrizeny') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg></span>
       Všechny stavby
     </a>
-    <a class="nav-item" href="pracovnici.html">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
-      Tým
-    </a>
-    <a class="nav-item" href="prehled.html">
+    <a class="nav-item" href="{{ url_for('prehled') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg></span>
       Přehledy
     </a>
 
     <div class="nav-section">Nastavení</div>
-    <a class="nav-item" href="nastaveni.html">
+    <a class="nav-item" href="{{ url_for('nastaveni') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></span>
       Nastavení
     </a>
-    <a class="nav-item" href="profil.html">
+    <a class="nav-item" href="{{ url_for('profil') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
       Profil
     </a>
 
     <div class="sidebar-footer">
       <div class="sidebar-user-card">
-        <div class="sidebar-avatar" id="sidebar-initials">?</div>
+        <div class="sidebar-avatar">{{ initials }}</div>
         <div class="sidebar-user-info">
-          <div class="sidebar-user-name" id="sidebar-name">—</div>
-          <div class="sidebar-user-role" id="sidebar-role">—</div>
+          <div class="sidebar-user-name">{{ u.jmeno }}</div>
+          <div class="sidebar-user-role">{{ 'Vedoucí' if u.role == 'admin' else 'Stavbyvedoucí' }}</div>
         </div>
         <button class="sidebar-logout-btn" onclick="logout()" title="Odhlásit se">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
@@ -320,231 +315,228 @@
     </div>
   </aside>
 
-  <main class="main">
+  <main class="main" style="padding:24px 28px;">
     <div class="page-header">
       <div>
         <div class="page-title">Moje stavby</div>
-        <div class="page-title-sub">Přehled staveb v mé správě · 2025</div>
+        <div class="page-title-sub">Přehled staveb v mé správě</div>
       </div>
-      <button class="btn-primary" onclick="alert('Funkce přidání stavby bude brzy dostupná.')">+ Nová stavba</button>
+      <button class="btn-primary" onclick="showAddStavbaDialog()">+ Nová stavba</button>
     </div>
 
-    <div class="stats">
+    <div class="stats" id="stats-row">
       <div class="stat-card">
         <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
         <div class="stat-label">Aktivní stavby</div>
-        <div class="stat-value green">4</div>
+        <div class="stat-value green" id="stat-aktivni">—</div>
         <div class="stat-sub">v mé správě</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
         <div class="stat-label">Záznamy tento měsíc</div>
-        <div class="stat-value">23</div>
-        <div class="stat-sub">únor 2026</div>
+        <div class="stat-value" id="stat-zaznamy">—</div>
+        <div class="stat-sub" id="stat-mesic">—</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon orange"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>
-        <div class="stat-label">Dny bez záznamu</div>
-        <div class="stat-value orange">3</div>
-        <div class="stat-sub">posledních 30 dní</div>
+        <div class="stat-label">Celkem staveb</div>
+        <div class="stat-value orange" id="stat-celkem">—</div>
+        <div class="stat-sub">přiděleno mně</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon gray"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
-        <div class="stat-label">Dokončeno letos</div>
-        <div class="stat-value">2</div>
-        <div class="stat-sub">stavby 2025</div>
+        <div class="stat-label">Dokončeno</div>
+        <div class="stat-value" id="stat-dokonceno">—</div>
+        <div class="stat-sub">stavby</div>
       </div>
     </div>
 
     <div class="filters">
-      <button class="filter-btn active">Všechny (4)</button>
-      <button class="filter-btn">Probíhající (3)</button>
-      <button class="filter-btn">Příprava (1)</button>
-      <button class="filter-btn">Pozastavené (0)</button>
-      <button class="filter-btn">Dokončené</button>
+      <button class="filter-btn active" onclick="filterStavby('vse', this)">Všechny</button>
+      <button class="filter-btn" onclick="filterStavby('probiha', this)">Probíhající</button>
+      <button class="filter-btn" onclick="filterStavby('dokoncena', this)">Dokončené</button>
+      <button class="filter-btn" onclick="filterStavby('pozastavena', this)">Pozastavené</button>
     </div>
 
-    <div class="stavby-grid">
-      <a class="stavba-card" href="denik.html">
-        <div class="stavba-header">
-          <div>
-            <div class="stavba-name">Bytový dům Prosecká</div>
-            <div class="stavba-addr">Prosecká 14, Praha 9</div>
-          </div>
-          <span class="status-badge green">Probíhá</span>
-        </div>
-        <div class="stavba-body">
-          <div class="stavba-meta">
-            <div class="meta-item">
-              <div class="meta-label">Zahájení</div>
-              <div class="meta-value">3. 2. 2025</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Dokončení</div>
-              <div class="meta-value">30. 11. 2025</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Stavbyvedoucí</div>
-              <div class="meta-value">Jan Novák</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Investor</div>
-              <div class="meta-value">Prosecká s.r.o.</div>
-            </div>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-label"><span>Průběh stavby</span><span>38 %</span></div>
-            <div class="progress-bar"><div class="progress-fill anim" style="--w:38%;width:38%"></div></div>
-          </div>
-        </div>
-        <div class="stavba-footer">
-          <div class="last-entry">Poslední záznam: dnes</div>
-          <button class="open-btn">Otevřít deník →</button>
-        </div>
-      </a>
-
-      <a class="stavba-card" href="denik.html">
-        <div class="stavba-header">
-          <div>
-            <div class="stavba-name">Rekonstrukce RD Beroun</div>
-            <div class="stavba-addr">Palackého 7, Beroun</div>
-          </div>
-          <span class="status-badge green">Probíhá</span>
-        </div>
-        <div class="stavba-body">
-          <div class="stavba-meta">
-            <div class="meta-item">
-              <div class="meta-label">Zahájení</div>
-              <div class="meta-value">15. 3. 2025</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Dokončení</div>
-              <div class="meta-value">31. 7. 2025</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Stavbyvedoucí</div>
-              <div class="meta-value">Jan Novák</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Investor</div>
-              <div class="meta-value">Pavel Kratochvíl</div>
-            </div>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-label"><span>Průběh stavby</span><span>62 %</span></div>
-            <div class="progress-bar"><div class="progress-fill anim" style="--w:62%;width:62%"></div></div>
-          </div>
-        </div>
-        <div class="stavba-footer">
-          <div class="last-entry">Poslední záznam: včera</div>
-          <button class="open-btn">Otevřít deník →</button>
-        </div>
-      </a>
-
-      <a class="stavba-card warn" href="denik.html">
-        <div class="stavba-header">
-          <div>
-            <div class="stavba-name">Průmyslová hala Kladno</div>
-            <div class="stavba-addr">Průmyslová 22, Kladno</div>
-          </div>
-          <span class="status-badge green">Probíhá</span>
-        </div>
-        <div class="stavba-body">
-          <div class="stavba-meta">
-            <div class="meta-item">
-              <div class="meta-label">Zahájení</div>
-              <div class="meta-value">10. 1. 2025</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Dokončení</div>
-              <div class="meta-value">28. 2. 2026</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Stavbyvedoucí</div>
-              <div class="meta-value">Jan Novák</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Investor</div>
-              <div class="meta-value">Kladno Industry a.s.</div>
-            </div>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-label"><span>Průběh stavby</span><span>22 %</span></div>
-            <div class="progress-bar"><div class="progress-fill anim" style="--w:22%;width:22%"></div></div>
-          </div>
-        </div>
-        <div class="stavba-footer">
-          <div class="last-entry warn">Upozornění: 2 dny bez záznamu (21. 4.)</div>
-          <button class="open-btn">Otevřít deník →</button>
-        </div>
-      </a>
-
-      <a class="stavba-card" href="denik.html">
-        <div class="stavba-header">
-          <div>
-            <div class="stavba-name">Obchodní centrum Nymburk</div>
-            <div class="stavba-addr">Náměstí 1, Nymburk</div>
-          </div>
-          <span class="status-badge blue">Příprava</span>
-        </div>
-        <div class="stavba-body">
-          <div class="stavba-meta">
-            <div class="meta-item">
-              <div class="meta-label">Zahájení</div>
-              <div class="meta-value">1. 5. 2025</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Dokončení</div>
-              <div class="meta-value">31. 3. 2026</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Stavbyvedoucí</div>
-              <div class="meta-value">Jan Novák</div>
-            </div>
-            <div class="meta-item">
-              <div class="meta-label">Investor</div>
-              <div class="meta-value">Nymburk Invest s.r.o.</div>
-            </div>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-label"><span>Průběh stavby</span><span>0 %</span></div>
-            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-          </div>
-        </div>
-        <div class="stavba-footer">
-          <div class="last-entry">Zatím žádný záznam</div>
-          <button class="open-btn">Otevřít deník →</button>
-        </div>
-      </a>
+    <div class="stavby-grid" id="stavby-grid">
+      <div style="color:var(--muted);padding:40px 0;">Načítám stavby…</div>
     </div>
   </main>
 </div>
 
-<script>
-  // Načtení přihlášeného uživatele
-  const user = JSON.parse(localStorage.getItem('sd_user') || 'null');
-  if (!user) { window.location = 'index.html'; }
-  else {
-    const ini = user.name.replace(/Ing\.\s*/,'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-    document.getElementById('top-initials').textContent = ini;
-    document.getElementById('top-name').textContent = user.name;
-    document.getElementById('sidebar-initials').textContent = ini;
-    document.getElementById('sidebar-name').textContent = user.name;
-    document.getElementById('sidebar-role').textContent = user.role === 'admin' ? 'Vedoucí' : 'Stavbyvedoucí';
-  }
-  function logout() { localStorage.removeItem('sd_user'); window.location = 'index.html'; }
+<!-- Add stavba modal -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+    <div style="font-size:1rem;font-weight:700;margin-bottom:20px;">Nová stavba</div>
+    <div class="form-grid">
+      <div class="form-field full"><label>Název stavby *</label><input id="n-nazev" placeholder="Bytový dům Prosecká…" /></div>
+      <div class="form-field full"><label>Adresa</label><input id="n-adresa" placeholder="Ulice 1, Město" /></div>
+      <div class="form-field"><label>Datum zahájení</label><input id="n-zahajeni" type="date" /></div>
+      <div class="form-field"><label>Datum dokončení</label><input id="n-dokonceni" type="date" /></div>
+      <div class="form-field full"><label>Investor</label><input id="n-investor" /></div>
+      <div class="form-field full"><label>Projektant</label><input id="n-projektant" /></div>
+      <div class="form-field"><label>TDI</label><input id="n-tdi" /></div>
+      <div class="form-field"><label>BOZP koordinátor</label><input id="n-bozp" /></div>
+      <div class="form-field"><label>Č. stavebního povolení</label><input id="n-povoleni" /></div>
+      <div class="form-field"><label>Parcelní číslo</label><input id="n-parcela" /></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="submitStavba()">Přidat stavbu</button>
+      <button class="btn-secondary" onclick="closeModal()">Zrušit</button>
+    </div>
+  </div>
+</div>
 
-  // Sidebar nav stagger
+<div class="toast" id="toast"></div>
+
+<script>
+  let allStavby = [];
+  let activeFilter = 'vse';
+
+  async function loadStavby() {
+    try {
+      const res = await fetch('/api/stavby');
+      allStavby = await res.json();
+      updateStats();
+      renderStavby(allStavby);
+    } catch(e) {
+      document.getElementById('stavby-grid').innerHTML = '<div style="color:var(--danger)">Chyba načítání dat.</div>';
+    }
+  }
+
+  function updateStats() {
+    const aktivni = allStavby.filter(s => s.stav === 'probiha').length;
+    const dokonceno = allStavby.filter(s => s.stav === 'dokoncena').length;
+    document.getElementById('stat-aktivni').textContent = aktivni;
+    document.getElementById('stat-celkem').textContent = allStavby.length;
+    document.getElementById('stat-dokonceno').textContent = dokonceno;
+    document.getElementById('stat-zaznamy').textContent = '—';
+    const now = new Date();
+    document.getElementById('stat-mesic').textContent = now.toLocaleDateString('cs-CZ', {month:'long', year:'numeric'});
+  }
+
+  function stavbaStavBadge(stav) {
+    if (stav === 'probiha')    return '<span class="status-badge green">Probíhá</span>';
+    if (stav === 'dokoncena')  return '<span class="status-badge gray">Dokončena</span>';
+    if (stav === 'pozastavena')return '<span class="status-badge orange">Pozastavena</span>';
+    return '<span class="status-badge gray">' + stav + '</span>';
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    const [y,m,dd] = d.split('-');
+    return `${parseInt(dd)}. ${parseInt(m)}. ${y}`;
+  }
+
+  function renderStavby(stavby) {
+    const grid = document.getElementById('stavby-grid');
+    if (!stavby.length) {
+      grid.innerHTML = '<div style="color:var(--muted);padding:40px 0;grid-column:1/-1;text-align:center;">Žádné stavby v této kategorii.</div>';
+      return;
+    }
+    grid.innerHTML = stavby.map((s, i) => `
+      <a class="stavba-card" href="{{ url_for('denik') }}?stavba_id=${s.id}" style="animation-delay:${0.08 + i*0.07}s">
+        <div class="stavba-header">
+          <div>
+            <div class="stavba-name">${s.nazev}</div>
+            <div class="stavba-addr">${s.adresa || '—'}</div>
+          </div>
+          ${stavbaStavBadge(s.stav)}
+        </div>
+        <div class="stavba-body">
+          <div class="stavba-meta">
+            <div class="meta-item">
+              <div class="meta-label">Zahájení</div>
+              <div class="meta-value">${formatDate(s.datum_zahajeni)}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Dokončení</div>
+              <div class="meta-value">${formatDate(s.datum_dokonceni)}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">Investor</div>
+              <div class="meta-value">${s.investor || '—'}</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label">TDI</div>
+              <div class="meta-value">${s.tdi || '—'}</div>
+            </div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-label"><span>Průběh stavby</span><span>${s.stav === 'dokoncena' ? '100 %' : '—'}</span></div>
+            <div class="progress-bar"><div class="progress-fill anim" style="--w:${s.stav === 'dokoncena' ? 100 : 0}%;width:${s.stav === 'dokoncena' ? 100 : 0}%"></div></div>
+          </div>
+        </div>
+        <div class="stavba-footer">
+          <div class="last-entry">Stavba č. ${s.id}</div>
+          <button class="open-btn">Otevřít deník →</button>
+        </div>
+      </a>`).join('');
+  }
+
+  function filterStavby(f, btn) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (f === 'vse') renderStavby(allStavby);
+    else renderStavby(allStavby.filter(s => s.stav === f));
+  }
+
+  function showAddStavbaDialog() {
+    const overlay = document.getElementById('modal-overlay');
+    overlay.style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+  }
+
+  async function submitStavba() {
+    const nazev = document.getElementById('n-nazev').value.trim();
+    if (!nazev) { showToast('Název stavby je povinný'); return; }
+    const data = {
+      nazev,
+      adresa: document.getElementById('n-adresa').value,
+      datum_zahajeni: document.getElementById('n-zahajeni').value,
+      datum_dokonceni: document.getElementById('n-dokonceni').value,
+      investor: document.getElementById('n-investor').value,
+      projektant: document.getElementById('n-projektant').value,
+      tdi: document.getElementById('n-tdi').value,
+      bozp_koordinator: document.getElementById('n-bozp').value,
+      cislo_povoleni: document.getElementById('n-povoleni').value,
+      parcela: document.getElementById('n-parcela').value,
+      stav: 'probiha',
+    };
+    const res = await fetch('/api/stavby', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    if (res.ok) {
+      closeModal();
+      showToast('Stavba přidána');
+      loadStavby();
+    } else {
+      showToast('Chyba při ukládání');
+    }
+  }
+
+  async function logout() {
+    await fetch('/auth/logout', { method: 'POST' });
+    window.location = '/';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+
   document.querySelectorAll('.sidebar .nav-item').forEach((el, i) => {
     el.style.animationDelay = (0.1 + i * 0.045) + 's';
   });
 
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
+  loadStavby();
 </script>
 </body>
 </html>

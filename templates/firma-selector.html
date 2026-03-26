@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stavební deník — Digitální vedení stavební dokumentace</title>
+  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(170deg, #0d2b12 0%, #133d18 25%, #1e6b24 55%, #2d8a36 80%, #163d1a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      color: #fff;
+    }
+
+    .landing { width: 100%; max-width: 440px; text-align: center; }
+
+    .logo-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
+    .logo-img { width: 44px; height: 44px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    .logo-text { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
+
+    .subtitle { font-size: 0.88rem; color: rgba(255,255,255,0.5); margin-bottom: 40px; font-weight: 400; }
+
+    .card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 32px 28px;
+      margin-bottom: 24px;
+    }
+
+    .card-title { font-size: 0.92rem; font-weight: 600; margin-bottom: 18px; color: rgba(255,255,255,0.85); }
+
+    .input-group { display: flex; gap: 0; margin-bottom: 12px; }
+    .input-prefix {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-right: none;
+      border-radius: 10px 0 0 10px;
+      padding: 12px 12px;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.4);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+    }
+    .input-slug {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-left: none;
+      border-radius: 0 10px 10px 0;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      color: #fff;
+      outline: none;
+      font-family: inherit;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .input-slug::placeholder { color: rgba(255,255,255,0.25); font-weight: 400; }
+    .input-slug:focus { border-color: rgba(60,184,67,0.6); }
+    .input-slug:focus ~ .input-prefix, .input-group:focus-within .input-prefix { border-color: rgba(60,184,67,0.6); }
+
+    .btn-login {
+      width: 100%;
+      padding: 13px 20px;
+      background: linear-gradient(135deg, #2d8a36, #1e6b24);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+    }
+    .btn-login:hover { background: linear-gradient(135deg, #3cb043, #2d8a36); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .error-msg {
+      font-size: 0.78rem;
+      color: #fca5a5;
+      margin-top: 8px;
+      min-height: 20px;
+      transition: opacity 0.2s;
+    }
+    .error-msg:empty { opacity: 0; }
+
+    .info-text {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.35);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .info-text strong { color: rgba(255,255,255,0.55); font-weight: 600; }
+    .info-url { color: rgba(255,255,255,0.5); font-family: 'SF Mono', Monaco, monospace; font-size: 0.75rem; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 4px; }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      font-size: 0.78rem;
+    }
+    .footer-links a {
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: rgba(255,255,255,0.8); }
+    .footer-links .sep { width: 1px; height: 14px; background: rgba(255,255,255,0.15); }
+    .footer-links .admin-link { font-size: 0.7rem; color: rgba(255,255,255,0.2); }
+    .footer-links .admin-link:hover { color: rgba(255,255,255,0.5); }
+
+    .landing { max-width: 540px; }
+
+    .firma-grid { display: grid; gap: 10px; margin-bottom: 24px; }
+    .firma-card {
+      display: flex; align-items: center; gap: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 16px 20px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #fff;
+      transition: all 0.2s;
+    }
+    .firma-card:hover { background: rgba(255,255,255,0.12); border-color: rgba(60,184,67,0.5); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.25); }
+    .firma-avatar {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #2d8a36, #1e6b24);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1rem; flex-shrink: 0;
+      letter-spacing: -0.02em;
+    }
+    .firma-info { flex: 1; min-width: 0; }
+    .firma-name { font-weight: 700; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .firma-slug { font-size: 0.72rem; color: rgba(255,255,255,0.35); margin-top: 2px; font-family: 'SF Mono', Monaco, monospace; }
+    .firma-arrow { color: rgba(255,255,255,0.25); font-size: 1.1rem; flex-shrink: 0; transition: color 0.2s; }
+    .firma-card:hover .firma-arrow { color: rgba(255,255,255,0.7); }
+
+    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: rgba(255,255,255,0.25); font-size: 0.72rem; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
+
+    .version { margin-top: 32px; font-size: 0.65rem; color: rgba(255,255,255,0.15); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .logo-row { animation: fadeUp 0.5s ease both; }
+    .subtitle { animation: fadeUp 0.5s 0.08s ease both; }
+    .card { animation: fadeUp 0.5s 0.16s ease both; }
+    .info-text { animation: fadeUp 0.5s 0.24s ease both; }
+    .footer-links { animation: fadeUp 0.5s 0.32s ease both; }
+
+    @media (max-width: 480px) {
+      .landing { max-width: 100%; }
+      .card { padding: 24px 20px; }
+      .logo-text { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="landing">
+  <div class="logo-row">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="logo-img" alt="Logo" />
+    <div class="logo-text">Stavební deník</div>
+  </div>
+  <div class="subtitle">Digitální vedení stavební dokumentace</div>
+
+  {% if firmy %}
+  <div class="firma-grid">
+    {% for f in firmy %}
+    <a class="firma-card" href="/{{ f.slug }}/" style="animation: fadeUp 0.5s {{ 0.16 + loop.index0 * 0.06 }}s ease both;">
+      <div class="firma-avatar">{{ f.nazev[:2]|upper }}</div>
+      <div class="firma-info">
+        <div class="firma-name">{{ f.nazev }}{% if f.heslo %} &#128274;{% endif %}</div>
+        <div class="firma-slug">/{{ f.slug }}</div>
+      </div>
+      <div class="firma-arrow">&rarr;</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="divider">nebo zadejte ručně</div>
+
+  <div class="card">
+    <form id="login-form" onsubmit="submitSlug(event)">
+      <div class="input-group">
+        <span class="input-prefix">stavebni-denik.cz /</span>
+        <input class="input-slug" id="slug-input" type="text" placeholder="slug-firmy"
+               autocomplete="off" autocapitalize="off" spellcheck="false" />
+      </div>
+      <button class="btn-login" type="submit" id="btn-submit">Přihlásit se &rarr;</button>
+      <div class="error-msg" id="error-msg"></div>
+    </form>
+  </div>
+
+  <div class="footer-links">
+    <a href="/registrace">Nemáte účet? Registrujte firmu</a>
+    <div class="sep"></div>
+    <a href="/admin/login" class="admin-link">Správa systému</a>
+  </div>
+
+  <div class="version">Stavební deník v2.0</div>
+</div>
+
+<script>
+  const input = document.getElementById('slug-input');
+  const errEl = document.getElementById('error-msg');
+  const btn = document.getElementById('btn-submit');
+
+  input.addEventListener('input', () => { errEl.textContent = ''; });
+
+  async function submitSlug(e) {
+    e.preventDefault();
+    const slug = input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (!slug) { errEl.textContent = 'Zadejte identifikátor firmy'; input.focus(); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Ověřuji…';
+    errEl.textContent = '';
+
+    try {
+      const res = await fetch('/api/check-firma', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        window.location.href = '/' + data.slug + '/';
+      } else {
+        errEl.textContent = data.error || 'Firma nenalezena';
+        input.focus();
+      }
+    } catch (err) {
+      errEl.textContent = 'Chyba připojení k serveru';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Přihlásit se \u2192';
+    }
+  }
+</script>
+
+</body>
+</html>

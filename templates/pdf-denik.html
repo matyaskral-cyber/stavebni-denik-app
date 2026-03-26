@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8" />
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 15mm 22mm 15mm;
+    @bottom-center {
+      content: "Strana " counter(page) " / " counter(pages);
+      font-size: 8pt;
+      color: #666;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 9pt; color: #1a1a1a; line-height: 1.5; }
+
+  .header { border-bottom: 2px solid #1a5c2a; padding-bottom: 12px; margin-bottom: 16px; }
+  .header h1 { font-size: 16pt; color: #1a5c2a; margin-bottom: 4px; }
+  .header-meta { display: flex; flex-wrap: wrap; gap: 4px 24px; font-size: 8.5pt; color: #444; }
+  .header-meta strong { color: #1a1a1a; }
+
+  .entry { page-break-inside: avoid; border: 1px solid #ddd; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; }
+  .entry-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 8px; }
+  .entry-date { font-size: 11pt; font-weight: 700; color: #1a5c2a; }
+  .entry-meta { font-size: 8pt; color: #666; }
+  .entry-lock { font-size: 7.5pt; color: #b45309; font-weight: 600; }
+
+  .section { margin-bottom: 6px; }
+  .section-label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 2px; }
+  .section-value { font-size: 9pt; white-space: pre-wrap; }
+
+  table.workers { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-top: 2px; }
+  table.workers th { background: #f5f5f5; text-align: left; padding: 3px 6px; border: 1px solid #ddd; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.3px; color: #666; }
+  table.workers td { padding: 3px 6px; border: 1px solid #ddd; }
+
+  .signatures { margin-top: 24px; page-break-inside: avoid; display: flex; justify-content: space-between; gap: 20px; }
+  .sig-block { flex: 1; text-align: center; padding-top: 40px; border-top: 1px solid #333; font-size: 8pt; color: #444; }
+
+  .badge-ok { color: #15803d; font-weight: 600; }
+  .badge-warn { color: #b45309; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Stavební deník — {{ stavba.nazev }}</h1>
+  <div class="header-meta">
+    {% if stavba.adresa %}<div><strong>Adresa:</strong> {{ stavba.adresa }}</div>{% endif %}
+    {% if stavba.investor %}<div><strong>Investor:</strong> {{ stavba.investor }}</div>{% endif %}
+    {% if firma %}<div><strong>Zhotovitel:</strong> {{ firma.nazev }}</div>{% endif %}
+    {% if stavba.datum_zahajeni %}<div><strong>Zahájení:</strong> {{ stavba.datum_zahajeni }}</div>{% endif %}
+    {% if stavba.datum_dokonceni %}<div><strong>Dokončení:</strong> {{ stavba.datum_dokonceni }}</div>{% endif %}
+    {% if stavba.cislo_povoleni %}<div><strong>Č. povolení:</strong> {{ stavba.cislo_povoleni }}</div>{% endif %}
+    {% if stavba.parcela %}<div><strong>Parcela:</strong> {{ stavba.parcela }}</div>{% endif %}
+    <div><strong>Export:</strong> {{ export_date }}</div>
+  </div>
+</div>
+
+{% for z in zaznamy %}
+<div class="entry">
+  <div class="entry-head">
+    <div class="entry-date">{{ z.datum }}</div>
+    <div class="entry-meta">
+      {% if z.zapsal_jmeno %}Zapsal: {{ z.zapsal_jmeno }}{% if z.zapsal_role %} ({{ z.zapsal_role }}){% endif %}{% endif %}
+      {% if z.zamceno %} <span class="entry-lock">| Uzamčeno {{ z.zamkl_kdo or '' }}</span>{% endif %}
+    </div>
+  </div>
+
+  {% if z.pocasi or z.teplota %}
+  <div class="section">
+    <div class="section-label">Počasí</div>
+    <div class="section-value">{{ z.pocasi or '' }}{% if z.teplota %}, {{ z.teplota }}{% endif %}</div>
+  </div>
+  {% endif %}
+
+  {% if z.pracovnici and z.pracovnici|length > 0 %}
+  <div class="section">
+    <div class="section-label">Pracovníci (celkem: {{ z.pracovnici_celkem or z.pracovnici|sum(attribute='pocet') }})</div>
+    <table class="workers">
+      <tr><th>Počet</th><th>Profese</th><th>Firma</th></tr>
+      {% for p in z.pracovnici %}
+      <tr><td>{{ p.pocet }}</td><td>{{ p.profese or '—' }}</td><td>{{ p.firma or '—' }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if z.dodavky_materialu and z.dodavky_materialu|length > 0 %}
+  <div class="section">
+    <div class="section-label">Dodávky materiálu</div>
+    <table class="workers">
+      <tr><th>Materiál</th><th>Množství</th><th>Jednotka</th><th>Dodavatel</th></tr>
+      {% for d in z.dodavky_materialu %}
+      <tr><td>{{ d.material or '—' }}</td><td>{{ d.mnozstvi or '—' }}</td><td>{{ d.jednotka or '—' }}</td><td>{{ d.dodavatel or '—' }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if z.mechanizace and z.mechanizace|length > 0 %}
+  <div class="section">
+    <div class="section-label">Mechanizace</div>
+    <table class="workers">
+      <tr><th>Stroj</th><th>Počet</th><th>Firma</th></tr>
+      {% for m in z.mechanizace %}
+      <tr><td>{{ m.stroj or '—' }}</td><td>{{ m.pocet }}</td><td>{{ m.firma or '—' }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if z.popis_prac %}
+  <div class="section">
+    <div class="section-label">Popis prací</div>
+    <div class="section-value">{{ z.popis_prac }}</div>
+  </div>
+  {% endif %}
+
+  {% if z.kontrolni_prohlidky and z.kontrolni_prohlidky|length > 0 %}
+  <div class="section">
+    <div class="section-label">Kontrolní prohlídky</div>
+    <table class="workers">
+      <tr><th>Jméno</th><th>Funkce/Organizace</th><th>Předmět</th><th>Výsledek</th></tr>
+      {% for k in z.kontrolni_prohlidky %}
+      <tr><td>{{ k.jmeno or '—' }}</td><td>{{ k.funkce_organizace or '—' }}</td><td>{{ k.predmet or '—' }}</td><td>{{ k.vysledek or '—' }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if z.odchylky_text %}
+  <div class="section">
+    <div class="section-label">Odchylky{% if z.odchylky_typ %} ({{ z.odchylky_typ }}){% endif %}</div>
+    <div class="section-value">{{ z.odchylky_text }}</div>
+  </div>
+  {% endif %}
+
+  {% if z.viceprace_priznak and z.viceprace_popis %}
+  <div class="section">
+    <div class="section-label">Vícepráce</div>
+    <div class="section-value badge-warn">{{ z.viceprace_popis }}</div>
+  </div>
+  {% endif %}
+
+  {% if z.bezpecnost %}
+  <div class="section">
+    <div class="section-label">BOZP</div>
+    <div class="section-value">{{ z.bezpecnost }}</div>
+  </div>
+  {% endif %}
+
+  {% if z.poznamka %}
+  <div class="section">
+    <div class="section-label">Poznámky</div>
+    <div class="section-value">{{ z.poznamka }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<div class="signatures">
+  <div class="sig-block">Stavbyvedoucí</div>
+  <div class="sig-block">TDI</div>
+  <div class="sig-block">Stavebník / Investor</div>
+</div>
+
+</body>
+</html>

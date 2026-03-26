@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stavební deník – Super Admin Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    body {
+      background: linear-gradient(170deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+    .login-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 380px;
+      backdrop-filter: blur(12px);
+    }
+    .login-card h2 { color: #fff; font-size: 1.2rem; margin-bottom: 20px; text-align: center; }
+    .admin-pill { background: #ef4444; color: #fff; font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; vertical-align: middle; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.08); color: #fff; font-size: 0.88rem; font-family: inherit; outline: none; box-sizing: border-box; }
+    .form-group input:focus { border-color: rgba(239,68,68,0.6); box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+    .btn-submit { width: 100%; padding: 12px; background: #ef4444; color: #fff; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-submit:hover { background: #dc2626; }
+    .error-msg { background: rgba(229,62,62,0.2); border: 1px solid rgba(229,62,62,0.4); color: #fff; border-radius: 10px; padding: 10px 16px; font-size: 0.82rem; margin-bottom: 16px; text-align: center; display: none; }
+    .error-msg.show { display: block; }
+    .back-link { display: block; text-align: center; margin-top: 20px; color: rgba(255,255,255,0.4); font-size: 0.78rem; text-decoration: none; }
+    .back-link:hover { color: #fff; }
+  </style>
+</head>
+<body>
+<div class="login-card">
+  <h2>Super Admin <span class="admin-pill">ADMIN</span></h2>
+  <div id="error-msg" class="error-msg"></div>
+  <div class="form-group">
+    <label>Přihlašovací jméno</label>
+    <input id="jmeno" placeholder="SUPER_ADMIN" />
+  </div>
+  <button class="btn-submit" onclick="login()">Přihlásit</button>
+</div>
+<a href="/" class="back-link">← Zpět</a>
+<script>
+  async function login() {
+    const jmeno = document.getElementById('jmeno').value.trim();
+    if (!jmeno) return;
+    try {
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jmeno }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        window.location = data.redirect;
+      } else {
+        const el = document.getElementById('error-msg');
+        el.textContent = data.error || 'Přístup zamítnut';
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 3000);
+      }
+    } catch(e) {
+      alert('Chyba připojení');
+    }
+  }
+  document.getElementById('jmeno').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

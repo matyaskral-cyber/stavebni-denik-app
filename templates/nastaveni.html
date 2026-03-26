@@ -18,9 +18,9 @@
 {% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
 
 <div class="topbar">
-  <a href="{{ url_for('dashboard') }}" class="topbar-logo">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
-    Stavební deník
+  <a href="{{ url_for('tenant.dashboard') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="{{ firma.nazev }}" />
+    {{ firma.nazev if firma else 'Stavební deník' }}
   </a>
   <div class="topbar-right">
     <div class="topbar-user"><div class="avatar-top">{{ initials }}</div><span>{{ u.jmeno }}</span></div>
@@ -31,16 +31,17 @@
 <div class="layout">
   <aside class="sidebar">
     <div class="nav-section">Hlavní menu</div>
-    <a class="nav-item" href="{{ url_for('dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
-    <a class="nav-item" href="{{ url_for('denik') }}"><span class="nav-dot"></span> Deník</a>
-    <a class="nav-item" href="{{ url_for('kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
-    <a class="nav-item" href="{{ url_for('pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.denik') }}"><span class="nav-dot"></span> Deník</a>
+    <a class="nav-item" href="{{ url_for('tenant.kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
+    <a class="nav-item" href="{{ url_for('tenant.pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
     <div class="nav-section">Firma</div>
-    <a class="nav-item" href="{{ url_for('dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
-    <a class="nav-item" href="{{ url_for('prehled') }}"><span class="nav-dot"></span> Přehledy</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.prehled') }}"><span class="nav-dot"></span> Přehledy</a>
     <div class="nav-section">Nastavení</div>
-    <a class="nav-item active" href="{{ url_for('nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
-    <a class="nav-item" href="{{ url_for('profil') }}"><span class="nav-dot"></span> Profil</a>
+    <a class="nav-item active" href="{{ url_for('tenant.nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
+    <a class="nav-item" href="{{ url_for('backup_tenant.backup_nastaveni', firma_slug=firma_slug) }}"><span class="nav-dot"></span> Zálohy</a>
+    <a class="nav-item" href="{{ url_for('tenant.profil') }}"><span class="nav-dot"></span> Profil</a>
     <div class="sidebar-footer">
       <div class="sidebar-user-card">
         <div class="sidebar-avatar">{{ initials }}</div>
@@ -58,16 +59,24 @@
   <main class="main">
     <div class="page-title">Nastavení</div>
 
+    <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:10px;">
+      <span style="font-size:1.3rem;">&#9888;&#65039;</span>
+      <div>
+        <div style="font-weight:700;font-size:0.88rem;margin-bottom:4px;">Elektronický podpis</div>
+        <div style="font-size:0.82rem;color:#78350f;line-height:1.5;">Elektronický podpis v této aplikaci slouží pouze jako zjednodušené potvrzení zápisu a <strong>nemá právní platnost</strong> kvalifikovaného elektronického podpisu dle nařízení eIDAS. Pro právně závazné dokumenty použijte kvalifikovaný elektronický podpis nebo vlastnoruční podpis na tištěném výtisku.</div>
+      </div>
+    </div>
+
     <div class="settings-section">
       <div class="settings-title">Firemní údaje</div>
       <div class="form-grid">
-        <div class="form-field"><label>Název firmy</label><input value="I. Kamenická stavební a obchodní firma s.r.o." /></div>
-        <div class="form-field"><label>IČO</label><input value="12345678" /></div>
-        <div class="form-field"><label>Sídlo firmy</label><input value="Stavební 12, Praha 9, 190 00" /></div>
-        <div class="form-field"><label>DIČ</label><input value="CZ12345678" /></div>
-        <div class="form-field"><label>Telefon</label><input value="+420 777 123 456" /></div>
-        <div class="form-field"><label>E-mail</label><input value="info@kamenicka-stavebni.cz" /></div>
-        <div class="form-field"><label>Autorizační číslo ČKAIT</label><input value="1001234" /></div>
+        <div class="form-field"><label>Název firmy</label><input value="{{ firma.nazev }}" /></div>
+        <div class="form-field"><label>IČO</label><input value="{{ firma.ico or '' }}" /></div>
+        <div class="form-field"><label>Sídlo firmy</label><input value="{{ firma.adresa or '' }}" /></div>
+        <div class="form-field"><label>DIČ</label><input value="" /></div>
+        <div class="form-field"><label>Telefon</label><input value="{{ firma.telefon or '' }}" /></div>
+        <div class="form-field"><label>E-mail</label><input value="{{ firma.email or '' }}" /></div>
+        <div class="form-field"><label>Autorizační číslo ČKAIT</label><input value="" /></div>
         <div class="form-field"><label>Zodpovědná osoba</label><input value="{{ u.jmeno }}" /></div>
       </div>
     </div>
@@ -75,9 +84,9 @@
     <div class="settings-section">
       <div class="settings-title">Výchozí nastavení deníku</div>
       <div class="form-grid">
-        <div class="form-field"><label>Výchozí TDI</label><input value="Ing. Jana Vlčková" /></div>
-        <div class="form-field"><label>Výchozí koordinátor BOZP</label><input value="Ing. Petr Číž" /></div>
-        <div class="form-field"><label>Výchozí projektant</label><input value="Ing. Pavel Horák" /></div>
+        <div class="form-field"><label>Výchozí TDI</label><input value="" /></div>
+        <div class="form-field"><label>Výchozí koordinátor BOZP</label><input value="" /></div>
+        <div class="form-field"><label>Výchozí projektant</label><input value="" /></div>
         <div class="form-field"><label>Logo pro PDF export</label><input type="file" accept="image/*" /></div>
       </div>
       <div style="margin-top:14px;">
@@ -123,6 +132,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  const FIRMA = '{{ firma_slug }}';
   function save() { showToast('Nastavení bylo uloženo'); }
   async function logout() { await fetch('/auth/logout', { method: 'POST' }); window.location = '/'; }
   function showToast(msg) {

@@ -1,0 +1,6 @@
+{
+  "api_url": "https://your-app.example.com/kamenicka/api/backup/export",
+  "api_key": "YOUR_API_KEY_HERE",
+  "local_path": "/opt/backups/stavebni-denik",
+  "firma_slug": "kamenicka"
+}

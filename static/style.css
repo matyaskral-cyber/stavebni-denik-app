@@ -834,6 +834,29 @@ a:hover { color: var(--green-d); }
 .stavby-grid .stavba-card:nth-child(5) { animation-delay: 0.40s; }
 .stavby-grid .stavba-card:nth-child(6) { animation-delay: 0.47s; }
 
+/* ===== FLOATING ACTION BUTTON (mobile) ===== */
+.fab-new-entry {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 90;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(60,184,67,0.5);
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: transform 0.2s;
+}
+.fab-new-entry:hover { transform: scale(1.1); }
+
 /* ===== MOBILNÍ RESPONZIVITA ===== */
 @media (max-width: 768px) {
 
@@ -870,13 +893,39 @@ a:hover { color: var(--green-d); }
   .btn-primary, .btn-outline { width: 100%; justify-content: center; }
   .topbar-actions { flex-direction: column; gap: 8px; }
 
-  /* Počasí chipy — wrap */
-  .weather-chips { flex-wrap: wrap; gap: 6px; }
-  .weather-chip { flex: 1; min-width: 80px; text-align: center; }
+  /* Počasí chipy — wrap do 2 řad */
+  .weather-row { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 6px !important; }
+  .weather-chip { min-height: 44px; justify-content: center; font-size: 0.75rem; padding: 6px 8px; }
+
+  /* Tabulky pracovníků/materiálů jako karty */
+  .workers-table thead { display: none; }
+  .workers-table tbody tr {
+    display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; margin-bottom: 8px;
+    background: var(--bg); border-radius: 8px; border: 1px solid var(--border);
+  }
+  .workers-table tbody td {
+    border: none; padding: 2px 4px; flex: 1; min-width: 60px;
+  }
+  .workers-table tbody td:last-child { flex: 0; }
+
+  /* Floating "+ Nový zápis" button */
+  .fab-new-entry {
+    display: flex !important;
+  }
+
+  /* Touch targets min 44px */
+  .btn-primary, .btn-secondary, .btn-add-row, .btn-lock, .topbar-btn,
+  .weather-chip, .wt-remove, .filter-btn, .action-btn {
+    min-height: 44px;
+  }
+
+  /* Stats grid */
+  .stats { grid-template-columns: 1fr 1fr !important; }
 
   /* Kalendář */
-  .calendar-grid { grid-template-columns: repeat(7, 1fr); font-size: 0.7rem; }
-  .cal-day { padding: 6px 2px; }
+  .cal-wrap { flex-direction: column; }
+  .note-col { width: 100%; position: static; }
+  .cal-day { min-height: 48px; padding: 4px 2px; }
 
   /* Modaly přes celou obrazovku */
   .modal { padding: 12px; }
@@ -885,6 +934,9 @@ a:hover { color: var(--green-d); }
   /* Nadřízený dashboard */
   .stats-row { grid-template-columns: 1fr 1fr !important; }
   .stavby-list { padding: 0 12px; }
+
+  /* Přehledy */
+  .grid2 { grid-template-columns: 1fr !important; }
 
 }
 

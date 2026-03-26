@@ -41,6 +41,10 @@
 
     .bozp-ok   { color: var(--green-d); font-weight: 500; font-size: 0.78rem; }
     .bozp-warn { color: var(--orange);  font-weight: 500; font-size: 0.78rem; }
+    .bozp-expired { color: var(--red);  font-weight: 600; font-size: 0.78rem; }
+    .bozp-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: #991b1b; font-weight: 500; }
+    .bozp-banner-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .bozp-banner-count { font-weight: 700; }
   </style>
 </head>
 <body>
@@ -51,9 +55,9 @@
 {% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
 
 <div class="topbar">
-  <a href="{{ url_for('dashboard') }}" class="topbar-logo">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
-    Stavební deník
+  <a href="{{ url_for('tenant.dashboard') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="{{ firma.nazev }}" />
+    {{ firma.nazev if firma else 'Stavební deník' }}
   </a>
   <div class="topbar-right">
     <div class="topbar-user"><div class="avatar-top">{{ initials }}</div><span>{{ u.jmeno }}</span></div>
@@ -64,16 +68,16 @@
 <div class="layout">
   <aside class="sidebar">
     <div class="nav-section">Hlavní menu</div>
-    <a class="nav-item" href="{{ url_for('dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
-    <a class="nav-item" href="{{ url_for('denik') }}"><span class="nav-dot"></span> Deník</a>
-    <a class="nav-item" href="{{ url_for('kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
-    <a class="nav-item active" href="{{ url_for('pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.denik') }}"><span class="nav-dot"></span> Deník</a>
+    <a class="nav-item" href="{{ url_for('tenant.kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
+    <a class="nav-item active" href="{{ url_for('tenant.pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
     <div class="nav-section">Firma</div>
-    <a class="nav-item" href="{{ url_for('dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
-    <a class="nav-item" href="{{ url_for('prehled') }}"><span class="nav-dot"></span> Přehledy</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.prehled') }}"><span class="nav-dot"></span> Přehledy</a>
     <div class="nav-section">Nastavení</div>
-    <a class="nav-item" href="{{ url_for('nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
-    <a class="nav-item" href="{{ url_for('profil') }}"><span class="nav-dot"></span> Profil</a>
+    <a class="nav-item" href="{{ url_for('tenant.nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
+    <a class="nav-item" href="{{ url_for('tenant.profil') }}"><span class="nav-dot"></span> Profil</a>
     <div class="sidebar-footer">
       <div class="sidebar-user-card">
         <div class="sidebar-avatar">{{ initials }}</div>
@@ -117,6 +121,11 @@
         <div class="stat-value orange" id="stat-bozp">—</div>
         <div class="stat-sub">z celkového počtu</div>
       </div>
+    </div>
+
+    <div class="bozp-banner" id="bozp-banner" style="display:none;">
+      <span class="bozp-banner-icon">⚠️</span>
+      <span><span class="bozp-banner-count" id="bozp-expired-count">0</span> pracovníků má prošlé BOZP školení — nesmí být na stavbě</span>
     </div>
 
     <div class="toolbar">
@@ -175,10 +184,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  const FIRMA = '{{ firma_slug }}';
   let allWorkers = [];
 
   async function loadWorkers() {
-    const res = await fetch('/api/pracovnici');
+    const res = await fetch(`/${FIRMA}/api/pracovnici`);
     allWorkers = await res.json();
     renderWorkers(allWorkers);
     updateBozpStat();
@@ -189,18 +199,37 @@
   }
 
   function bozpStatus(bozp_datum) {
-    if (!bozp_datum) return { ok: false, label: 'Neznámé' };
+    if (!bozp_datum) return { ok: false, expired: true, label: 'Neznámé', cls: 'bozp-expired' };
     const d = new Date(bozp_datum);
-    const ok = (new Date() - d) < 365*24*60*60*1000;
-    return { ok, label: `${ok ? 'Platné' : 'Prošlé'} · ${bozp_datum}` };
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMonths = Math.floor(diffMs / (30.44 * 24 * 60 * 60 * 1000));
+    const ok = diffMs < 365 * 24 * 60 * 60 * 1000;
+    let label;
+    if (ok) {
+      const monthsLeft = 12 - diffMonths;
+      label = monthsLeft <= 2 ? `Platné · vyprší za ${monthsLeft} měs.` : `Platné · ${diffMonths} měs.`;
+    } else {
+      label = `Prošlé před ${diffMonths} měsíci`;
+    }
+    return { ok, expired: !ok, label, cls: ok ? 'bozp-ok' : 'bozp-expired' };
   }
 
   function updateBozpStat() {
     const ok = allWorkers.filter(w => bozpStatus(w.bozp_datum).ok).length;
+    const expired = allWorkers.filter(w => w.aktivni && bozpStatus(w.bozp_datum).expired).length;
     document.getElementById('stat-bozp').textContent = ok;
     document.getElementById('stat-celkem').textContent = allWorkers.length;
     document.getElementById('stat-aktivni').textContent = allWorkers.filter(w=>w.aktivni).length;
     document.getElementById('stat-neaktivni').textContent = allWorkers.filter(w=>!w.aktivni).length;
+    // BOZP banner
+    const banner = document.getElementById('bozp-banner');
+    if (expired > 0) {
+      banner.style.display = 'flex';
+      document.getElementById('bozp-expired-count').textContent = expired;
+    } else {
+      banner.style.display = 'none';
+    }
   }
 
   function renderWorkers(data) {
@@ -214,7 +243,7 @@
         <td style="color:var(--muted)">${w.role || '—'}</td>
         <td style="color:var(--muted)">${w.firma || '—'}</td>
         <td style="color:var(--muted)">${w.kvalifikace || '—'}</td>
-        <td class="${bozp.ok ? 'bozp-ok' : 'bozp-warn'}">${bozp.label}</td>
+        <td class="${bozp.cls}">${bozp.label}</td>
         <td><span class="status-badge ${w.aktivni ? 'green' : 'gray'}">${w.aktivni ? 'Aktivní' : 'Neaktivní'}</span></td>
         <td style="display:flex;gap:4px;">
           <button class="action-btn" onclick="toggleActive(${w.id},${w.aktivni})">${w.aktivni ? 'Deakt.' : 'Aktivovat'}</button>
@@ -238,7 +267,7 @@
   }
 
   async function toggleActive(id, current) {
-    await fetch(`/api/pracovnici/${id}`, {
+    await fetch(`/${FIRMA}/api/pracovnici/${id}`, {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ aktivni: !current }),
@@ -248,7 +277,7 @@
 
   async function deleteWorker(id) {
     if (!confirm('Opravdu smazat pracovníka?')) return;
-    await fetch(`/api/pracovnici/${id}`, { method: 'DELETE' });
+    await fetch(`/${FIRMA}/api/pracovnici/${id}`, { method: 'DELETE' });
     showToast('Pracovník smazán');
     loadWorkers();
   }
@@ -267,7 +296,7 @@
       bozp_datum: document.getElementById('n-bozp').value || null,
       aktivni: true,
     };
-    const res = await fetch('/api/pracovnici', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    const res = await fetch(`/${FIRMA}/api/pracovnici`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
     if (res.ok) { closeModal(); showToast('Pracovník přidán'); loadWorkers(); }
     else showToast('Chyba ukládání');
   }

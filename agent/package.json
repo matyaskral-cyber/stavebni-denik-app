@@ -1,0 +1,9 @@
+{
+  "name": "stavebni-denik-sync-agent",
+  "version": "1.0.0",
+  "description": "On-premise backup sync agent for Stavební deník",
+  "main": "sync-agent.js",
+  "scripts": {
+    "sync": "node sync-agent.js"
+  }
+}

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stavební deník – Registrace firmy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    body {
+      background: linear-gradient(170deg, #133d18 0%, #1e6b24 35%, #2d8a36 65%, #163d1a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+    .hero { text-align: center; margin-bottom: 32px; }
+    .hero h1 { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .hero p { font-size: 0.82rem; color: rgba(255,255,255,0.55); }
+
+    .reg-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      backdrop-filter: blur(12px);
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .form-group label .req { color: #f87171; }
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .form-group input::placeholder { color: rgba(255,255,255,0.3); }
+    .form-group input:focus { border-color: rgba(60,184,67,0.6); box-shadow: 0 0 0 3px rgba(60,184,67,0.15); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      background: #3cb843;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover { background: #2e9e34; }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.78rem;
+      text-decoration: none;
+    }
+    .back-link:hover { color: #fff; }
+
+    .error-msg {
+      background: rgba(229,62,62,0.2);
+      border: 1px solid rgba(229,62,62,0.4);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      margin-bottom: 16px;
+      text-align: center;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Registrace firmy</h1>
+  <p>Vytvořte si vlastní stavební deník</p>
+</div>
+
+<div class="reg-card">
+  <div id="error-msg" class="error-msg"></div>
+
+  <div class="form-group">
+    <label>Název firmy <span class="req">*</span></label>
+    <input id="r-nazev" placeholder="Název vaší firmy s.r.o." />
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>IČO</label>
+      <input id="r-ico" placeholder="12345678" />
+    </div>
+    <div class="form-group">
+      <label>Telefon</label>
+      <input id="r-telefon" placeholder="+420 777 000 000" />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Adresa / sídlo</label>
+    <input id="r-adresa" placeholder="Ulice 1, Město, PSČ" />
+  </div>
+
+  <div class="form-group">
+    <label>E-mail</label>
+    <input id="r-email" type="email" placeholder="info@firma.cz" />
+  </div>
+
+  <div class="form-group">
+    <label>Jméno administrátora <span class="req">*</span></label>
+    <input id="r-admin" placeholder="Jan Novák" />
+  </div>
+
+  <button class="btn-submit" onclick="submitRegistrace()">Vytvořit firmu</button>
+</div>
+
+<a href="/" class="back-link">← Zpět na výběr firmy</a>
+
+<script>
+  async function submitRegistrace() {
+    const nazev = document.getElementById('r-nazev').value.trim();
+    const admin_jmeno = document.getElementById('r-admin').value.trim();
+    if (!nazev) { showError('Název firmy je povinný'); return; }
+    if (!admin_jmeno) { showError('Jméno administrátora je povinné'); return; }
+
+    try {
+      const res = await fetch('/registrace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nazev,
+          ico: document.getElementById('r-ico').value,
+          adresa: document.getElementById('r-adresa').value,
+          telefon: document.getElementById('r-telefon').value,
+          email: document.getElementById('r-email').value,
+          admin_jmeno,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        window.location = data.redirect;
+      } else {
+        showError(data.error || 'Chyba při registraci');
+      }
+    } catch(e) {
+      showError('Chyba připojení k serveru');
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+</script>
+</body>
+</html>

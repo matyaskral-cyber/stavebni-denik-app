@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
+  <meta name="theme-color" content="#2e8b2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.jpg') }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stavební deník – Přehled vedení</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
@@ -30,6 +34,8 @@
     .stavby-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; }
     .stavba-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; display: block; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
     .stavba-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); border-color: var(--border-2); }
+    .stavba-card.overdue { border-color: #fca5a5; box-shadow: 0 0 0 1px #fca5a5; }
+    .stavba-card.overdue:hover { border-color: #ef4444; }
     .stavba-header { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
     .stavba-name { font-weight: 700; font-size: 0.95rem; color: var(--text); margin-bottom: 2px; }
     .stavba-addr { font-size: 0.76rem; color: var(--subtle); }
@@ -44,8 +50,17 @@
     .progress-bar { height: 4px; background: var(--border); border-radius: 100px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 100px; background: var(--green); }
     .progress-fill.done { background: var(--subtle); }
+    .progress-fill.overdue { background: var(--red); }
+    .progress-pct { font-size: 0.68rem; color: var(--subtle); margin-top: 3px; display: flex; justify-content: space-between; }
+    .progress-pct.overdue { color: var(--red); font-weight: 600; }
+    .overdue-icon { font-size: 0.82rem; margin-right: 4px; }
+    .open-btn.download { background: var(--bg); color: var(--subtle); border-color: var(--border); }
+    .open-btn.download:hover { background: var(--border); color: var(--text); }
     .stavba-footer { padding: 9px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .last-entry { font-size: 0.76rem; color: var(--subtle); }
+    .entry-stats { font-size: 0.72rem; color: var(--subtle); margin-top: 8px; display: flex; gap: 12px; }
+    .entry-stats strong { color: var(--text); }
+    .entry-warn { color: #dc2626; font-weight: 600; font-size: 0.72rem; margin-top: 4px; }
     .open-btn { font-size: 0.76rem; font-weight: 600; color: var(--green-d); background: var(--green-bg); border: 1px solid var(--green-b); padding: 4px 10px; border-radius: 5px; cursor: pointer; font-family: inherit; }
     .open-btn:hover { background: var(--green-b); }
     .no-results { text-align: center; padding: 60px 20px; color: var(--subtle); grid-column: 1 / -1; font-size: 0.88rem; }
@@ -60,9 +75,9 @@
 {% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
 
 <div class="topbar">
-  <a href="{{ url_for('dashboard_nadrizeny') }}" class="topbar-logo">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
-    Stavební deník
+  <a href="{{ url_for('tenant.dashboard_nadrizeny') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="{{ firma.nazev }}" />
+    {{ firma.nazev if firma else 'Stavební deník' }}
     <span class="role-pill">Vedení</span>
   </a>
   <div class="topbar-right">
@@ -74,23 +89,23 @@
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-brand-mark">IK</div>
+      <div class="sidebar-brand-mark">{{ firma.nazev[:2]|upper }}</div>
       <div class="sidebar-brand-text">
         <div class="sidebar-brand-name">Stavební deník</div>
-        <div class="sidebar-brand-sub">I. Kamenická s.r.o.</div>
+        <div class="sidebar-brand-sub">{{ firma.nazev }}</div>
       </div>
     </div>
 
     <div class="nav-section">Přehled</div>
-    <a class="nav-item active" href="{{ url_for('dashboard_nadrizeny') }}">
+    <a class="nav-item active" href="{{ url_for('tenant.dashboard_nadrizeny') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg></span>
       Všechny stavby
     </a>
-    <a class="nav-item" href="{{ url_for('kalendar') }}">
+    <a class="nav-item" href="{{ url_for('tenant.kalendar') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></span>
       Kalendář
     </a>
-    <a class="nav-item" href="{{ url_for('prehled') }}">
+    <a class="nav-item" href="{{ url_for('tenant.prehled') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg></span>
       Výkazy
     </a>
@@ -104,17 +119,17 @@
     {% endfor %}
 
     <div class="nav-section">Firma</div>
-    <a class="nav-item" href="{{ url_for('pracovnici') }}">
+    <a class="nav-item" href="{{ url_for('tenant.pracovnici') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
       Tým
     </a>
 
     <div class="nav-section">Nastavení</div>
-    <a class="nav-item" href="{{ url_for('nastaveni') }}">
+    <a class="nav-item" href="{{ url_for('tenant.nastaveni') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></span>
       Nastavení firmy
     </a>
-    <a class="nav-item" href="{{ url_for('profil') }}">
+    <a class="nav-item" href="{{ url_for('tenant.profil') }}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
       Profil
     </a>
@@ -223,6 +238,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  const FIRMA = '{{ firma_slug }}';
   // Map of stavbyvedouci id -> jmeno (populated from template)
   const svMap = {};
   {% for sv in stavbyvedouci %}
@@ -233,7 +249,7 @@
   let activeStatus = 'vse';
 
   async function loadStavby() {
-    const res = await fetch('/api/stavby');
+    const res = await fetch(`/${FIRMA}/api/stavby`);
     allStavby = await res.json();
     updateStats();
     applyFilters();
@@ -246,7 +262,14 @@
     document.getElementById('s-pozastaveno').textContent = allStavby.filter(s=>s.stav==='pozastavena').length;
   }
 
-  function stavbaStatusBadge(stav) {
+  function stavbaStatusBadge(s) {
+    const stav = typeof s === 'string' ? s : s.stav;
+    if (typeof s === 'object' && stav === 'probiha' && s.datum_dokonceni) {
+      const end = new Date(s.datum_dokonceni);
+      if (Date.now() > end.getTime()) {
+        return `<span class="status-badge" style="background:#fef2f2;color:#dc2626;border-color:#fca5a5">Po termínu</span>`;
+      }
+    }
     const map = { probiha:'green', dokoncena:'gray', pozastavena:'orange' };
     const labels = { probiha:'Probíhá', dokoncena:'Dokončena', pozastavena:'Pozastavena' };
     return `<span class="status-badge ${map[stav]||'gray'}">${labels[stav]||stav}</span>`;
@@ -263,17 +286,35 @@
     return `${parseInt(dd)}. ${parseInt(m)}. ${y}`;
   }
 
+  function calcProgress(s) {
+    if (s.stav === 'dokoncena') return { pct: 100, overdue: false, label: 'Dokončeno' };
+    if (!s.datum_zahajeni || !s.datum_dokonceni) return { pct: 0, overdue: false, label: '' };
+    const start = new Date(s.datum_zahajeni).getTime();
+    const end = new Date(s.datum_dokonceni).getTime();
+    const now = Date.now();
+    const total = end - start;
+    if (total <= 0) return { pct: 100, overdue: true, label: 'Termín prošel' };
+    const elapsed = now - start;
+    const pct = Math.round(Math.min(elapsed / total * 100, 100));
+    const overdue = now > end;
+    const daysLeft = Math.ceil((end - now) / 86400000);
+    const label = overdue ? `Termín prošel o ${Math.abs(daysLeft)} dní` : `${daysLeft} dní do dokončení`;
+    return { pct, overdue, label };
+  }
+
   function renderStavby(stavby) {
     const grid = document.getElementById('stavby-grid');
     if (!stavby.length) { grid.innerHTML = '<div class="no-results">Žádné stavby neodpovídají filtru.</div>'; return; }
     grid.innerHTML = stavby.map(s => {
       const mgrName = svMap[s.stavbyvedouci_id] || '—';
       const mgrInits = mgrInitials(mgrName);
+      const prog = calcProgress(s);
+      const isOverdue = (prog.overdue || s.days_without_entry > 3) && s.stav === 'probiha';
       return `
-      <div class="stavba-card" onclick="window.location='{{ url_for('denik_nadrizeny') }}?stavba_id=${s.id}'">
+      <div class="stavba-card${isOverdue ? ' overdue' : ''}" onclick="window.location='{{ url_for('tenant.denik_nadrizeny') }}?stavba_id=${s.id}'">
         <div class="stavba-header">
-          <div><div class="stavba-name">${s.nazev}</div><div class="stavba-addr">${s.adresa||'—'}</div></div>
-          ${stavbaStatusBadge(s.stav)}
+          <div><div class="stavba-name">${isOverdue ? '<span class="overdue-icon">⚠️</span>' : ''}${s.nazev}</div><div class="stavba-addr">${s.adresa||'—'}</div></div>
+          ${stavbaStatusBadge(s)}
         </div>
         <div class="stavba-body">
           <div class="manager-row">
@@ -286,12 +327,18 @@
             <div><div class="meta-label">Investor</div><div class="meta-value">${s.investor||'—'}</div></div>
             <div><div class="meta-label">TDI</div><div class="meta-value">${s.tdi||'—'}</div></div>
           </div>
-          <div class="progress-bar"><div class="progress-fill${s.stav==='dokoncena'?' done':''}" style="width:${s.stav==='dokoncena'?100:30}%"></div></div>
+          <div class="progress-bar"><div class="progress-fill${s.stav==='dokoncena'?' done':''}${isOverdue?' overdue':''}" style="width:${prog.pct}%"></div></div>
+          ${prog.label ? `<div class="progress-pct${isOverdue?' overdue':''}">${prog.label}<span>${prog.pct}%</span></div>` : ''}
+          <div class="entry-stats">
+            <span>Zápisů/měsíc: <strong>${s.entries_this_month||0}</strong></span>
+            <span>Celkem: <strong>${s.total_entries||0}</strong></span>
+          </div>
+          ${s.days_without_entry > 3 ? `<div class="entry-warn">&#9888; ${s.days_without_entry} dní bez zápisu!</div>` : ''}
         </div>
         <div class="stavba-footer">
-          <div class="last-entry">Stavba č. ${s.id}</div>
-          <button class="open-btn" onclick="event.stopPropagation();window.location='{{ url_for('denik_nadrizeny') }}?stavba_id=${s.id}'">
-            ${s.stav==='dokoncena'?'Stáhnout deník':'Zobrazit deník'} →
+          <div class="last-entry">${s.last_entry_date ? 'Poslední zápis: ' + formatDate(s.last_entry_date) : 'Zatím žádný zápis'}</div>
+          <button class="open-btn${s.stav==='dokoncena'?' download':''}" onclick="event.stopPropagation();window.location='{{ url_for('tenant.denik_nadrizeny') }}?stavba_id=${s.id}'">
+            ${s.stav==='dokoncena'?'📥 Stáhnout deník':'Zobrazit deník →'}
           </button>
         </div>
       </div>`;
@@ -345,7 +392,7 @@
       stavbyvedouci_id: svId ? parseInt(svId) : null,
       stav: 'probiha',
     };
-    const res = await fetch('/api/stavby', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    const res = await fetch(`/${FIRMA}/api/stavby`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
     if (res.ok) { closeModal(); showToast('Stavba přidána'); loadStavby(); }
     else showToast('Chyba při ukládání');
   }

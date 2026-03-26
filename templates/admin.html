@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stavební deník – Super Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    body { background: var(--bg); }
+    .topbar-logo { font-weight: 700; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+    .admin-pill { background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .topbar-nav { display: flex; gap: 8px; margin-left: 24px; }
+    .topbar-nav a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.82rem; padding: 4px 12px; border-radius: 6px; transition: all 0.15s; }
+    .topbar-nav a:hover, .topbar-nav a.active { color: #fff; background: rgba(255,255,255,0.1); }
+    .container { max-width: 1000px; margin: 0 auto; padding: 24px 20px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+    .stat-label { font-size: 0.68rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    .stat-value.green { color: var(--green); }
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .table-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 10px 16px; font-size: 0.65rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); background: var(--bg); }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.84rem; color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+    .action-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 0.72rem; font-family: inherit; }
+    .action-btn:hover { border-color: var(--green); color: var(--green); }
+    .action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/admin" class="topbar-logo">
+    Stavební deník <span class="admin-pill">Super Admin</span>
+  </a>
+  <div class="topbar-nav">
+    <a href="/admin" class="active">Firmy</a>
+    <a href="/admin/backups">Zálohy</a>
+  </div>
+  <div class="topbar-right">
+    <span style="color:rgba(255,255,255,0.6);font-size:0.82rem;">{{ current_user.jmeno if current_user else '' }}</span>
+    <button class="topbar-btn" onclick="logout()">Odhlásit</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Celkem firem</div>
+      <div class="stat-value green">{{ stats.firmy_count }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Aktivní firmy</div>
+      <div class="stat-value">{{ stats.firmy_aktivni }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Celkem uživatelů</div>
+      <div class="stat-value">{{ stats.uzivatele_count }}</div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Registrované firmy</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Název</th>
+          <th>Slug</th>
+          <th>IČO</th>
+          <th>Stav</th>
+          <th>Vytvořeno</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in firmy %}
+        <tr>
+          <td>{{ f.id }}</td>
+          <td style="font-weight:600;">{{ f.nazev }}</td>
+          <td><code>{{ f.slug }}</code></td>
+          <td>{{ f.ico or '—' }}</td>
+          <td><span class="status-badge {{ 'green' if f.aktivni else 'gray' }}">{{ 'Aktivní' if f.aktivni else 'Neaktivní' }}</span></td>
+          <td style="color:var(--subtle);">{{ f.created_at.strftime('%d. %m. %Y') if f.created_at else '—' }}</td>
+          <td>
+            <button class="action-btn {{ 'danger' if f.aktivni else '' }}" onclick="toggleFirma({{ f.id }}, {{ 'true' if f.aktivni else 'false' }})">
+              {{ 'Deaktivovat' if f.aktivni else 'Aktivovat' }}
+            </button>
+            <a href="/{{ f.slug }}/" class="action-btn" style="text-decoration:none;">Otevřít</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  async function toggleFirma(id, isActive) {
+    await fetch(`/admin/firmy/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aktivni: !isActive }),
+    });
+    location.reload();
+  }
+
+  async function logout() {
+    await fetch('/auth/logout', { method: 'POST' });
+    window.location = '/';
+  }
+</script>
+</body>
+</html>

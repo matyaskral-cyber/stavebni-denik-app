@@ -35,6 +35,11 @@
     .cal-day.selected { background: var(--green-bg); outline: 2px solid var(--green); outline-offset: -2px; }
     .day-num { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 600; color: var(--text); border-radius: 50%; margin-bottom: 3px; }
     .day-note-chip { font-size: 0.62rem; background: var(--green); color: #fff; border-radius: 3px; padding: 2px 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 2px; font-weight: 500; }
+    .day-note-chip.porada { background: var(--blue); }
+    .day-note-chip.kontrola { background: var(--orange); }
+    .day-note-chip.dodavka { background: #8b5cf6; }
+    .day-note-chip.zkouska { background: var(--yellow); }
+    .day-note-chip.milnik { background: var(--red); }
     .day-note-dot { width: 5px; height: 5px; background: var(--green); border-radius: 50%; margin-top: 3px; }
 
     .note-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
@@ -81,9 +86,9 @@
 {% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
 
 <div class="topbar">
-  <a href="{{ url_for('dashboard') }}" class="topbar-logo">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
-    Stavební deník
+  <a href="{{ url_for('tenant.dashboard') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="{{ firma.nazev }}" />
+    {{ firma.nazev if firma else 'Stavební deník' }}
   </a>
   <div class="topbar-right">
     <div class="topbar-user">
@@ -97,16 +102,16 @@
 <div class="layout">
   <aside class="sidebar">
     <div class="nav-section">Hlavní menu</div>
-    <a class="nav-item" href="{{ url_for('dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
-    <a class="nav-item" href="{{ url_for('denik') }}"><span class="nav-dot"></span> Deník</a>
-    <a class="nav-item active" href="{{ url_for('kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
-    <a class="nav-item" href="{{ url_for('pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.denik') }}"><span class="nav-dot"></span> Deník</a>
+    <a class="nav-item active" href="{{ url_for('tenant.kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
+    <a class="nav-item" href="{{ url_for('tenant.pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
     <div class="nav-section">Firma</div>
-    <a class="nav-item" href="{{ url_for('dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
-    <a class="nav-item" href="{{ url_for('prehled') }}"><span class="nav-dot"></span> Přehledy</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.prehled') }}"><span class="nav-dot"></span> Přehledy</a>
     <div class="nav-section">Nastavení</div>
-    <a class="nav-item" href="{{ url_for('nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
-    <a class="nav-item" href="{{ url_for('profil') }}"><span class="nav-dot"></span> Profil</a>
+    <a class="nav-item" href="{{ url_for('tenant.nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
+    <a class="nav-item" href="{{ url_for('tenant.profil') }}"><span class="nav-dot"></span> Profil</a>
     <div class="sidebar-footer">
       <div class="sidebar-user-card">
         <div class="sidebar-avatar">{{ initials }}</div>
@@ -142,7 +147,8 @@
       <div class="note-col">
         <div class="note-panel" id="note-panel">
           <div class="note-empty" id="note-empty">
-            <div class="note-empty-text">Klikněte na libovolný den pro přidání poznámky nebo události.</div>
+            <div style="font-size:2rem;margin-bottom:8px;opacity:0.4;">📅</div>
+            <div class="note-empty-text">Zatím žádné události.<br>Klikněte na den pro přidání.</div>
           </div>
           <div id="note-editor" style="display:none;">
             <div class="note-panel-header">
@@ -184,6 +190,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  const FIRMA = '{{ firma_slug }}';
   const CZ_MONTHS = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
   const CZ_DAYS_L = ['Neděle','Pondělí','Úterý','Středa','Čtvrtek','Pátek','Sobota'];
   const CZ_DAYS_S = ['Ne','Po','Út','St','Čt','Pá','So'];
@@ -195,7 +202,7 @@
 
   async function loadNotes() {
     try {
-      const res = await fetch('/api/kalendar');
+      const res = await fetch(`/${FIRMA}/api/kalendar`);
       const list = await res.json();
       notes = {};
       list.forEach(n => { notes[n.datum] = n; });
@@ -211,6 +218,17 @@
   function toggleNoteType(btn) {
     document.querySelectorAll('.note-type-chip').forEach(c => c.classList.remove('sel'));
     btn.classList.add('sel');
+  }
+
+  function noteTypeClass(title) {
+    if (!title) return '';
+    const t = title.toLowerCase();
+    if (t.includes('porad')) return 'porada';
+    if (t.includes('kontrol') || t.includes('prohlíd')) return 'kontrola';
+    if (t.includes('dodáv') || t.includes('dodat')) return 'dodavka';
+    if (t.includes('zkoušk') || t.includes('test')) return 'zkouska';
+    if (t.includes('milník') || t.includes('termín')) return 'milnik';
+    return '';
   }
 
   function renderCalendar() {
@@ -245,7 +263,8 @@
       const note = notes[c.key];
       let noteHtml = '';
       if (note && !c.other) {
-        noteHtml = note.title ? `<div class="day-note-chip">${note.title}</div>` : `<div class="day-note-dot"></div>`;
+        const typeCls = noteTypeClass(note.title);
+        noteHtml = note.title ? `<div class="day-note-chip ${typeCls}">${note.title}</div>` : `<div class="day-note-dot"></div>`;
       }
       html += `<div class="${cls}" onclick="selectDay('${c.key}')"><div class="day-num">${c.day}</div>${noteHtml}</div>`;
     });
@@ -279,7 +298,7 @@
     const title = document.getElementById('note-title').value.trim();
     const poznamka = document.getElementById('note-text').value.trim();
     try {
-      const res = await fetch('/api/kalendar', {
+      const res = await fetch(`/${FIRMA}/api/kalendar`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ datum: selectedKey, title, poznamka }),
@@ -299,7 +318,7 @@
     if (!selectedKey || !notes[selectedKey]) return;
     const note = notes[selectedKey];
     try {
-      await fetch(`/api/kalendar/datum/${selectedKey}`, { method: 'DELETE' });
+      await fetch(`/${FIRMA}/api/kalendar/datum/${selectedKey}`, { method: 'DELETE' });
       delete notes[selectedKey];
       document.getElementById('note-title').value = '';
       document.getElementById('note-text').value = '';

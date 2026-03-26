@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stavební deník – Přihlášení</title>
+  <title>Stavební deník – {{ firma.nazev }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <style>
     body {
@@ -47,17 +47,30 @@
     }
 
     .logo-wrap {
-      display: inline-block;
-      margin-bottom: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: rgba(60,184,67,0.2);
+      border: 2px solid rgba(60,184,67,0.4);
+      margin-bottom: 20px;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
     }
 
+    {% if firma.logo_url %}
+    .logo-wrap { background: none; border: none; }
     .logo-wrap img {
-      height: 220px;
+      height: 80px;
       width: auto;
       display: block;
-      mix-blend-mode: screen;
-      filter: grayscale(1) invert(1) brightness(2.2) contrast(2);
+      border-radius: 20px;
     }
+    {% endif %}
 
     .hero h1 {
       font-family: 'DM Sans', sans-serif;
@@ -79,16 +92,6 @@
       width: 100%;
       max-width: 700px;
       position: relative;
-    }
-
-    .section-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: rgba(255,255,255,0.4);
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      margin-bottom: 10px;
-      padding-left: 2px;
     }
 
     .user-grid {
@@ -185,6 +188,17 @@
       letter-spacing: 0.04em;
     }
 
+    .back-link {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: rgba(255,255,255,0.35);
+      text-decoration: none;
+      font-size: 0.82rem;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: rgba(255,255,255,0.7); }
+
     .error-msg {
       background: rgba(229,62,62,0.2);
       border: 1px solid rgba(229,62,62,0.4);
@@ -212,67 +226,111 @@
 </head>
 <body>
 
+<a href="/" class="back-link">&larr; Zpět na výběr firmy</a>
+
 <div class="hero">
   <div class="logo-wrap">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="I. Kamenická stavební a obchodní firma s.r.o." />
+    {% if firma.logo_url %}
+    <img src="{{ firma.logo_url }}" alt="{{ firma.nazev }}" />
+    {% else %}
+    {{ firma.nazev[:2]|upper }}
+    {% endif %}
   </div>
   <h1>Stavební deník</h1>
-  <p>I. Kamenická stavební a obchodní firma s.r.o.</p>
+  <p>{{ firma.nazev }}</p>
 </div>
 
 <div class="profiles-wrap">
   <div id="error-msg" class="error-msg"></div>
 
   <div class="divider"><span>vedení</span></div>
-  <div class="user-grid" id="grid-admin"></div>
+  <div class="user-grid" id="grid-admin">
+    <div style="color:rgba(255,255,255,0.3);font-size:0.82rem;padding:12px;">Načítám…</div>
+  </div>
 
   <div class="divider"><span>stavbyvedoucí</span></div>
-  <div class="user-grid" id="grid-users"></div>
+  <div class="user-grid" id="grid-users">
+    <div style="color:rgba(255,255,255,0.3);font-size:0.82rem;padding:12px;">Načítám…</div>
+  </div>
+
+  {% if has_password %}
+  <div class="divider"><span>přístup chráněn heslem</span></div>
+  <div style="display:flex;gap:8px;max-width:320px;margin:0 auto;">
+    <input id="firma-heslo" type="password" placeholder="Heslo firmy…"
+           style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:12px 14px;color:#fff;font-size:0.88rem;font-family:inherit;outline:none;" />
+  </div>
+  {% endif %}
 </div>
 
-<div class="version">Stavební deník · I. Kamenická s.r.o.</div>
+<div class="version">Stavební deník · {{ firma.nazev }}</div>
 
 <script>
-  const USERS = [
-    { name: 'Ing. Lukáš Hrbek',   role: 'admin', title: 'Vedoucí pobočky'  },
-    { name: 'Jaroslav Dvořáček',  role: 'admin', title: 'Vedoucí / Admin'   },
-    { name: 'Tadeáš Zahradník',   role: 'admin', title: 'Vedoucí / Admin'   },
-    { name: 'Václav Hanzálek',    role: 'admin', title: 'Vedoucí / Admin'   },
-    { name: 'Jan Sláma',          role: 'user',  title: 'Stavbyvedoucí'     },
-    { name: 'Roman Fára',         role: 'user',  title: 'Stavbyvedoucí'     },
-    { name: 'Antonín Houser',     role: 'user',  title: 'Stavbyvedoucí'     },
-    { name: 'Starý Matyáš',       role: 'user',  title: 'Stavbyvedoucí'     },
-  ];
+  const FIRMA = '{{ firma_slug }}';
+  const HAS_PASSWORD = {{ 'true' if has_password else 'false' }};
 
   function initials(name) {
-    return name.replace(/Ing\.\s*/, '').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    return name.replace(/Ing\.\s*/, '').replace(/Bc\.\s*/, '').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
   }
 
-  function buildGrid() {
-    const admins = USERS.filter(u => u.role === 'admin');
-    const users  = USERS.filter(u => u.role === 'user');
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-    document.getElementById('grid-admin').innerHTML = admins.map((u, i) => `
-      <button class="user-btn admin" onclick="login('${u.name}', '${u.role}')" style="animation-delay:${0.2 + i * 0.06}s">
-        <div class="u-avatar">${initials(u.name)}</div>
-        <div class="u-name">${u.name}</div>
-        <div class="u-role">${u.title}</div>
-      </button>`).join('');
-
-    document.getElementById('grid-users').innerHTML = users.map((u, i) => `
-      <button class="user-btn" onclick="login('${u.name}', '${u.role}')" style="animation-delay:${0.35 + i * 0.06}s">
-        <div class="u-avatar">${initials(u.name)}</div>
-        <div class="u-name">${u.name}</div>
-        <div class="u-role">${u.title}</div>
-      </button>`).join('');
-  }
-
-  async function login(name, role) {
+  async function loadUsers() {
     try {
-      const res = await fetch('/auth/login', {
+      const res = await fetch(`/${FIRMA}/api/uzivatele`);
+      if (res.status === 403 || res.status === 401) {
+        // Not logged in yet — load users from template-injected data
+        buildFromTemplate();
+        return;
+      }
+      const users = await res.json();
+      buildGrid(users);
+    } catch(e) {
+      buildFromTemplate();
+    }
+  }
+
+  function buildFromTemplate() {
+    // Fallback: use server-rendered user list
+    const users = [
+      {% for u in uzivatele %}
+      { name: '{{ u.jmeno }}', role: '{{ u.role }}', title: '{{ u.title or "" }}' },
+      {% endfor %}
+    ];
+    buildGrid(users);
+  }
+
+  function buildGrid(users) {
+    const admins = users.filter(u => u.role === 'admin');
+    const workers = users.filter(u => u.role === 'user');
+
+    document.getElementById('grid-admin').innerHTML = admins.length ? admins.map((u, i) => `
+      <button class="user-btn admin" onclick="login('${esc(u.jmeno || u.name)}')" style="animation-delay:${0.2 + i * 0.06}s">
+        <div class="u-avatar">${initials(u.jmeno || u.name)}</div>
+        <div class="u-name">${esc(u.jmeno || u.name)}</div>
+        <div class="u-role">${esc(u.title || 'Vedení')}</div>
+      </button>`).join('') : '<div style="color:rgba(255,255,255,0.3);font-size:0.82rem;padding:12px;">Žádní administrátoři</div>';
+
+    document.getElementById('grid-users').innerHTML = workers.length ? workers.map((u, i) => `
+      <button class="user-btn" onclick="login('${esc(u.jmeno || u.name)}')" style="animation-delay:${0.35 + i * 0.06}s">
+        <div class="u-avatar">${initials(u.jmeno || u.name)}</div>
+        <div class="u-name">${esc(u.jmeno || u.name)}</div>
+        <div class="u-role">${esc(u.title || 'Stavbyvedoucí')}</div>
+      </button>`).join('') : '<div style="color:rgba(255,255,255,0.3);font-size:0.82rem;padding:12px;">Žádní stavbyvedoucí</div>';
+  }
+
+  async function login(name) {
+    const payload = { jmeno: name };
+    if (HAS_PASSWORD) {
+      const hesloEl = document.getElementById('firma-heslo');
+      const heslo = (hesloEl ? hesloEl.value : '').trim();
+      if (!heslo) { showError('Zadejte heslo firmy'); if (hesloEl) hesloEl.focus(); return; }
+      payload.heslo = heslo;
+    }
+    try {
+      const res = await fetch(`/${FIRMA}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jmeno: name, role: role }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok && data.ok) {
@@ -292,7 +350,7 @@
     setTimeout(() => el.classList.remove('show'), 4000);
   }
 
-  buildGrid();
+  buildFromTemplate();
 </script>
 </body>
 </html>

@@ -54,9 +54,9 @@
 {% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
 
 <div class="topbar">
-  <a href="{{ url_for('dashboard') }}" class="topbar-logo">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
-    Stavební deník
+  <a href="{{ url_for('tenant.dashboard') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="{{ firma.nazev }}" />
+    {{ firma.nazev if firma else 'Stavební deník' }}
   </a>
   <div class="topbar-right">
     <div class="topbar-user"><div class="avatar-top">{{ initials }}</div><span>{{ u.jmeno }}</span></div>
@@ -67,16 +67,16 @@
 <div class="layout">
   <aside class="sidebar">
     <div class="nav-section">Hlavní menu</div>
-    <a class="nav-item" href="{{ url_for('dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
-    <a class="nav-item" href="{{ url_for('denik') }}"><span class="nav-dot"></span> Deník</a>
-    <a class="nav-item" href="{{ url_for('kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
-    <a class="nav-item" href="{{ url_for('pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.denik') }}"><span class="nav-dot"></span> Deník</a>
+    <a class="nav-item" href="{{ url_for('tenant.kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
+    <a class="nav-item" href="{{ url_for('tenant.pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
     <div class="nav-section">Firma</div>
-    <a class="nav-item" href="{{ url_for('dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
-    <a class="nav-item" href="{{ url_for('prehled') }}"><span class="nav-dot"></span> Přehledy</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.prehled') }}"><span class="nav-dot"></span> Přehledy</a>
     <div class="nav-section">Nastavení</div>
-    <a class="nav-item" href="{{ url_for('nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
-    <a class="nav-item active" href="{{ url_for('profil') }}"><span class="nav-dot"></span> Profil</a>
+    <a class="nav-item" href="{{ url_for('tenant.nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
+    <a class="nav-item active" href="{{ url_for('tenant.profil') }}"><span class="nav-dot"></span> Profil</a>
     <div class="sidebar-footer">
       <div class="sidebar-user-card">
         <div class="sidebar-avatar">{{ initials }}</div>
@@ -99,7 +99,7 @@
       <div>
         <div class="profile-name">{{ u.jmeno }}</div>
         <div class="profile-role">{{ u.title or ('Vedoucí' if u.role == 'admin' else 'Stavbyvedoucí') }}</div>
-        <div class="profile-meta">I. Kamenická stavební a obchodní firma s.r.o.</div>
+        <div class="profile-meta">{{ firma.nazev }}</div>
         <div class="profile-badges">
           <span class="badge {{ 'green' if u.role == 'admin' else 'blue' }}">{{ 'Admin / Vedoucí' if u.role == 'admin' else 'Stavbyvedoucí' }}</span>
           <span class="badge green">BOZP školení platné</span>
@@ -147,11 +147,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  const FIRMA = '{{ firma_slug }}';
   async function loadStats() {
     try {
       const [stavbyRes, pracovniciRes] = await Promise.all([
-        fetch('/api/stavby'),
-        fetch('/api/pracovnici'),
+        fetch(`/${FIRMA}/api/stavby`),
+        fetch(`/${FIRMA}/api/pracovnici`),
       ]);
       const stavby = await stavbyRes.json();
       const pracovnici = await pracovniciRes.json();

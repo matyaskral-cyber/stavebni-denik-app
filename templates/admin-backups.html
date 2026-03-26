@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stavební deník – Zálohy</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    body { background: var(--bg); }
+    .topbar-logo { font-weight: 700; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+    .admin-pill { background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+    .topbar-nav { display: flex; gap: 8px; margin-left: 24px; }
+    .topbar-nav a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.82rem; padding: 4px 12px; border-radius: 6px; transition: all 0.15s; }
+    .topbar-nav a:hover, .topbar-nav a.active { color: #fff; background: rgba(255,255,255,0.1); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+    .stat-label { font-size: 0.68rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    .stat-value.green { color: var(--green); }
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .table-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 10px 16px; font-size: 0.65rem; font-weight: 600; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); background: var(--bg); }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.84rem; color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+    tr.row-error td { background: rgba(239,68,68,0.06); }
+    tr.row-old td { background: rgba(234,179,8,0.06); }
+    .action-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 0.72rem; font-family: inherit; }
+    .action-btn:hover { border-color: var(--green); color: var(--green); }
+    .btn-run { background: var(--green); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600; font-family: inherit; }
+    .btn-run:hover { opacity: 0.9; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+    .badge-ok { background: rgba(34,197,94,0.15); color: #16a34a; }
+    .badge-error { background: rgba(239,68,68,0.15); color: #dc2626; }
+    .badge-running { background: rgba(59,130,246,0.15); color: #2563eb; }
+    .badge-agent { background: rgba(168,85,247,0.15); color: #7c3aed; }
+    .badge-cloud { background: rgba(59,130,246,0.15); color: #2563eb; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--green); color: var(--text); padding: 12px 20px; border-radius: 8px; font-size: 0.84rem; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 999; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/admin" class="topbar-logo">
+    Stavební deník <span class="admin-pill">Super Admin</span>
+  </a>
+  <div class="topbar-nav">
+    <a href="/admin">Firmy</a>
+    <a href="/admin/backups" class="active">Zálohy</a>
+  </div>
+  <div class="topbar-right">
+    <span style="color:rgba(255,255,255,0.6);font-size:0.82rem;">{{ current_user.jmeno if current_user else '' }}</span>
+    <button class="topbar-btn" onclick="logout()">Odhlásit</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Zálohy dnes</div>
+      <div class="stat-value green">{{ stats.backups_today }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Chyby</div>
+      <div class="stat-value" style="{{ 'color:var(--red)' if stats.errors else '' }}">{{ stats.errors }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Celkové úložiště</div>
+      <div class="stat-value">{{ '%.1f'|format(stats.total_size / 1048576) }} MB</div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Historie záloh</div>
+      <button class="btn-run" onclick="runAll()">Zálohovat vše</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Firma</th>
+          <th>Typ</th>
+          <th>Datum</th>
+          <th>Velikost</th>
+          <th>Záznamy</th>
+          <th>Stav</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="logsBody">
+        {% for log in logs %}
+        {% set age_days = ((now|default(None) or log.created_at).__class__(2026,3,25) - log.created_at).days if log.created_at else 0 %}
+        <tr class="{{ 'row-error' if log.status == 'error' else ('row-old' if log.created_at and (log.created_at.date() < (log.created_at.__class__.utcnow().date().__class__(log.created_at.__class__.utcnow().year, log.created_at.__class__.utcnow().month, log.created_at.__class__.utcnow().day))) else '') }}">
+          <td style="font-weight:600;">{{ log.firma.nazev if log.firma else '—' }}</td>
+          <td><span class="badge {{ 'badge-cloud' if log.typ == 'cloud' else 'badge-agent' }}">{{ log.typ }}</span></td>
+          <td style="color:var(--subtle);">{{ log.created_at.strftime('%d. %m. %Y %H:%M') if log.created_at else '—' }}</td>
+          <td>{{ '%.1f KB'|format(log.velikost_bytes / 1024) if log.velikost_bytes else '—' }}</td>
+          <td>{{ log.pocet_zaznamu if log.pocet_zaznamu else '—' }}</td>
+          <td>
+            <span class="badge badge-{{ log.status }}">{{ log.status }}</span>
+            {% if log.chyba %}<br><small style="color:var(--red);">{{ log.chyba[:80] }}</small>{% endif %}
+          </td>
+          <td>
+            {% if log.status == 'ok' and log.s3_key %}
+            <a href="/admin/backups/download/{{ log.id }}" class="action-btn" style="text-decoration:none;">Stáhnout</a>
+            {% endif %}
+            <button class="action-btn" onclick="runOne({{ log.firma_id }})">Spustit</button>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not logs %}
+        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--subtle);">Zatím žádné zálohy</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Per-firma quick backup cards -->
+  <div style="margin-top:24px;">
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Záloha podle firem</div>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Firma</th><th>Poslední záloha</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for f in firmy %}
+          {% set last = f.backup_logs|sort(attribute='created_at', reverse=True)|first if f.backup_logs else None %}
+          <tr class="{{ 'row-old' if last and last.created_at and ((last.created_at.__class__.utcnow() - last.created_at).days > 2) else '' }}">
+            <td style="font-weight:600;">{{ f.nazev }}</td>
+            <td style="color:var(--subtle);">{{ last.created_at.strftime('%d. %m. %Y %H:%M') if last and last.created_at else 'Nikdy' }}</td>
+            <td><button class="action-btn" onclick="runOne({{ f.id }})">Zálohovat</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  async function runAll() {
+    const res = await fetch('/admin/backups/run', { method: 'POST' });
+    if (res.ok) showToast('Záloha všech firem spuštěna');
+    else showToast('Chyba při spuštění zálohy');
+    setTimeout(() => location.reload(), 3000);
+  }
+
+  async function runOne(firmaId) {
+    const res = await fetch(`/admin/backups/run/${firmaId}`, { method: 'POST' });
+    if (res.ok) showToast('Záloha firmy spuštěna');
+    else showToast('Chyba při spuštění zálohy');
+    setTimeout(() => location.reload(), 3000);
+  }
+
+  async function logout() {
+    await fetch('/auth/logout', { method: 'POST' });
+    window.location = '/';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>

@@ -51,9 +51,9 @@
 {% set initials = (parts[0][0] + (parts[1][0] if parts|length > 1 else ''))|upper %}
 
 <div class="topbar">
-  <a href="{{ url_for('dashboard') }}" class="topbar-logo">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
-    Stavební deník
+  <a href="{{ url_for('tenant.dashboard') }}" class="topbar-logo">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="{{ firma.nazev }}" />
+    {{ firma.nazev if firma else 'Stavební deník' }}
   </a>
   <div class="topbar-right">
     <div class="topbar-user"><div class="avatar-top">{{ initials }}</div><span>{{ u.jmeno }}</span></div>
@@ -64,16 +64,16 @@
 <div class="layout">
   <aside class="sidebar">
     <div class="nav-section">Hlavní menu</div>
-    <a class="nav-item" href="{{ url_for('dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
-    <a class="nav-item" href="{{ url_for('denik') }}"><span class="nav-dot"></span> Deník</a>
-    <a class="nav-item" href="{{ url_for('kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
-    <a class="nav-item" href="{{ url_for('pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard') }}"><span class="nav-dot"></span> Moje stavby</a>
+    <a class="nav-item" href="{{ url_for('tenant.denik') }}"><span class="nav-dot"></span> Deník</a>
+    <a class="nav-item" href="{{ url_for('tenant.kalendar') }}"><span class="nav-dot"></span> Kalendář</a>
+    <a class="nav-item" href="{{ url_for('tenant.pracovnici') }}"><span class="nav-dot"></span> Pracovníci</a>
     <div class="nav-section">Firma</div>
-    <a class="nav-item" href="{{ url_for('dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
-    <a class="nav-item active" href="{{ url_for('prehled') }}"><span class="nav-dot"></span> Přehledy</a>
+    <a class="nav-item" href="{{ url_for('tenant.dashboard_nadrizeny') }}"><span class="nav-dot"></span> Všechny stavby</a>
+    <a class="nav-item active" href="{{ url_for('tenant.prehled') }}"><span class="nav-dot"></span> Přehledy</a>
     <div class="nav-section">Nastavení</div>
-    <a class="nav-item" href="{{ url_for('nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
-    <a class="nav-item" href="{{ url_for('profil') }}"><span class="nav-dot"></span> Profil</a>
+    <a class="nav-item" href="{{ url_for('tenant.nastaveni') }}"><span class="nav-dot"></span> Nastavení</a>
+    <a class="nav-item" href="{{ url_for('tenant.profil') }}"><span class="nav-dot"></span> Profil</a>
     <div class="sidebar-footer">
       <div class="sidebar-user-card">
         <div class="sidebar-avatar">{{ initials }}</div>
@@ -91,7 +91,6 @@
   <main class="main">
     <div class="page-header">
       <div class="page-title">Přehledy a statistiky</div>
-      <button class="btn-primary" onclick="showToast('Export do Excelu bude brzy dostupný.')">Exportovat do Excelu</button>
     </div>
     <div class="period-selector">
       <button class="period-btn" onclick="setPeriod(this)">Tento týden</button>
@@ -121,6 +120,9 @@
         <div class="stat-sub">celkem</div>
       </div>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button class="btn-primary" onclick="showToast('Export do Excelu bude brzy dostupný.')" style="font-size:0.82rem;padding:8px 14px;">📊 Exportovat do Excelu</button>
+    </div>
     <div class="grid2" id="stavby-bars">
       <div class="card">
         <div class="card-title">Záznamy dle stavby</div>
@@ -147,10 +149,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  const FIRMA = '{{ firma_slug }}';
   async function loadData() {
     const [stavbyRes, pracovniciRes] = await Promise.all([
-      fetch('/api/stavby'),
-      fetch('/api/pracovnici'),
+      fetch(`/${FIRMA}/api/stavby`),
+      fetch(`/${FIRMA}/api/pracovnici`),
     ]);
     const stavby = await stavbyRes.json();
     const pracovnici = await pracovniciRes.json();
@@ -173,12 +176,30 @@
       <div class="bar"><div class="bar-fill" style="width:${Math.round((stavStates[item.k]||0)/maxStav*100)}%"></div></div>
     </div>`).join('');
 
-    // Bar chart – stavby by name (show up to 5)
-    document.getElementById('bar-zaznamy').innerHTML = stavby.slice(0,5).map(s => `
-      <div class="bar-item">
-        <div class="bar-label"><span>${s.nazev}</span><span>${s.stav}</span></div>
-        <div class="bar"><div class="bar-fill${s.stav==='dokoncena'?' orange':''}" style="width:${s.stav==='dokoncena'?100:s.stav==='probiha'?60:20}%"></div></div>
-      </div>`).join('') || '<div style="color:var(--muted);font-size:0.82rem;">Žádné stavby.</div>';
+    // Bar chart – stavby by name with real zaznam counts
+    const zaznamCounts = {};
+    const zaznamWorkers = {};
+    const zaznamLast = {};
+    let maxZaznamu = 1;
+    await Promise.all(stavby.map(async s => {
+      try {
+        const zRes = await fetch(`/${FIRMA}/api/stavby/${s.id}/zaznamy`);
+        const zaznamy = await zRes.json();
+        zaznamCounts[s.id] = zaznamy.length;
+        zaznamWorkers[s.id] = zaznamy.reduce((sum, z) => sum + (z.pracovnici_celkem || 0), 0);
+        zaznamLast[s.id] = zaznamy.length ? zaznamy[0].datum : null;
+        if (zaznamy.length > maxZaznamu) maxZaznamu = zaznamy.length;
+      } catch(e) { zaznamCounts[s.id] = 0; }
+    }));
+    document.getElementById('bar-zaznamy').innerHTML = stavby.slice(0,6).map(s => {
+      const cnt = zaznamCounts[s.id] || 0;
+      const workers = zaznamWorkers[s.id] || 0;
+      const last = zaznamLast[s.id];
+      return `<div class="bar-item">
+        <div class="bar-label"><span>${s.nazev}</span><span>${cnt} zápisů · ${workers} prac. · ${last || '—'}</span></div>
+        <div class="bar"><div class="bar-fill" style="width:${Math.round(cnt/maxZaznamu*100)}%"></div></div>
+      </div>`;
+    }).join('') || '<div style="color:var(--muted);font-size:0.82rem;">Žádné stavby.</div>';
 
     // Stavby list
     document.getElementById('stavby-list').innerHTML = stavby.map(s => `

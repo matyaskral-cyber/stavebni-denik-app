@@ -1,0 +1,17 @@
+{
+  "name": "Stavební deník",
+  "short_name": "Deník",
+  "description": "Elektronický stavební deník pro stavební firmy",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2e8b2e",
+  "icons": [
+    {
+      "src": "/static/logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

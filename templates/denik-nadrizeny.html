@@ -67,15 +67,15 @@
 
 <div class="topbar">
   <div class="topbar-left">
-    <a href="{{ url_for('dashboard_nadrizeny') }}" class="topbar-logo">
-      <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="I. Kamenická stavební" />
-      Stavební deník
+    <a href="{{ url_for('tenant.dashboard_nadrizeny') }}" class="topbar-logo">
+      <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="{{ firma.nazev }}" />
+      {{ firma.nazev if firma else 'Stavební deník' }}
       <span class="role-pill">Vedení</span>
     </a>
     {% if stavba %}
     <div class="breadcrumb">
       <span>/</span>
-      <a href="{{ url_for('dashboard_nadrizeny') }}">Všechny stavby</a>
+      <a href="{{ url_for('tenant.dashboard_nadrizeny') }}">Všechny stavby</a>
       <span>/</span>
       <span>{{ stavba.nazev }}</span>
     </div>
@@ -178,6 +178,7 @@
 </div>
 
 <script>
+  const FIRMA = '{{ firma_slug }}';
   const STAVBA_ID = {{ stavba.id if stavba else 'null' }};
   const CZ_MONTHS = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
   const CZ_DAYS = ['Neděle','Pondělí','Úterý','Středa','Čtvrtek','Pátek','Sobota'];
@@ -189,7 +190,7 @@
   async function loadEntries() {
     if (!STAVBA_ID) return;
     try {
-      const res = await fetch(`/api/stavby/${STAVBA_ID}/zaznamy`);
+      const res = await fetch(`/${FIRMA}/api/stavby/${STAVBA_ID}/zaznamy`);
       allEntries = await res.json();
       renderDayList();
       if (allEntries.length) openEntry(allEntries[0].id);
@@ -256,7 +257,7 @@
     }
 
     // Edit link
-    document.getElementById('ev-edit-link').href = `/denik?stavba_id=${STAVBA_ID}`;
+    document.getElementById('ev-edit-link').href = `/${FIRMA}/denik?stavba_id=${STAVBA_ID}`;
 
     document.getElementById('no-entry').style.display = 'none';
     document.getElementById('entry-view').style.display = 'block';

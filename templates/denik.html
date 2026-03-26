@@ -2,12 +2,12 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo.jpg') }}" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗</text></svg>" />
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
   <meta name="theme-color" content="#2e8b2e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.jpg') }}" />
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stavební deník{% if stavba %} – {{ stavba.nazev }}{% endif %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
@@ -184,7 +184,7 @@
 <div class="topbar">
   <div class="topbar-left">
     <a href="{{ url_for('tenant.dashboard') }}" class="topbar-logo">
-      <img src="{{ url_for('static', filename='logo.jpg') }}" class="topbar-logo-img" alt="{{ firma.nazev }}" />
+      <span class="topbar-logo-mark">{{ firma.nazev[:2]|upper if firma else 'SD' }}</span>
       {{ firma.nazev if firma else 'Stavební deník' }}
     </a>
     {% if stavba %}

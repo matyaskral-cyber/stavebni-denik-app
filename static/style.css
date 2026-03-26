@@ -96,6 +96,21 @@ body {
   filter: grayscale(1) invert(1) brightness(2.2) contrast(2);
 }
 
+.topbar-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--primary-dark, #2a8a30);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
 .topbar-right {
   display: flex;
   align-items: center;
